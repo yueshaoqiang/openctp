@@ -7,6 +7,7 @@ last modify: 2024/5/2
 
 import sys
 import threading
+
 from openctp_ctp import tdapi
 
 
@@ -138,7 +139,9 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
 
         if pInstrument is not None:
             print(
-                f"OnRspQryInstrument:{pInstrument.InstrumentID}, {pInstrument.InstrumentName}, {pInstrument.ExchangeID} "
+                f"OnRspQryInstrument:{pInstrument.InstrumentID} "
+                f"InstrumentName={pInstrument.InstrumentName} "
+                f"ExchangeID={pInstrument.ExchangeID} "
                 f"ProductID={pInstrument.ProductID} "
                 f"VolumeMultiple={pInstrument.VolumeMultiple} "
                 f"PositionType={pInstrument.PositionType} "
@@ -152,7 +155,10 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
             print(f"OnRspQryExchange failed: {pRspInfo.ErrorMsg}")
             return
-        print(f"OnRspQryExchange:{pExchange.ExchangeID},{pExchange.ExchangeName}")
+        print(f"OnRspQryExchange:"
+              f"ExchangeID={pExchange.ExchangeID} "
+              f"ExchangeName={pExchange.ExchangeName} "
+              )
         if bIsLast == True:
             print("Completed.")
 
@@ -161,17 +167,41 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
             print(f"OnRspQryProduct failed: {pRspInfo.ErrorMsg}")
             return
-        print(f"OnRspQryProduct:{pProduct.ProductID}, {pProduct.ProductName}, {pProduct.ExchangeID}")
+        print(f"OnRspQryProduct:{pProduct.ProductID} "
+              f"ProductName={pProduct.ProductName} "
+              f"ExchangeID={pProduct.ExchangeID} "
+              )
         if bIsLast == True:
             print("Completed.")
 
     def OnRtnOrder(self, pOrder):
-        print(
-            f"OnRtnOrder:{pOrder.InstrumentID}, {pOrder.ExchangeID}, {pOrder.Direction}, {pOrder.LimitPrice},  {pOrder.VolumeTotalOriginal}, {pOrder.VolumeTraded}, {pOrder.OrderStatus}, {pOrder.StatusMsg}")
+        print(f"OnRtnOrder:{pOrder.InstrumentID} "
+              f"ExchangeID={pOrder.ExchangeID} "
+              f"Direction={pOrder.Direction} "
+              f"LimitPrice={pOrder.LimitPrice} "
+              f"VolumeTotalOriginal={pOrder.VolumeTotalOriginal} "
+              f"OrderSysID={pOrder.OrderSysID} "
+              f"OrderStatus={pOrder.OrderStatus} "
+              f"StatusMsg={pOrder.StatusMsg} "
+              f"VolumeTotal={pOrder.VolumeTotal} "
+              f"VolumeTotalOriginal={pOrder.VolumeTotalOriginal} "
+              f"VolumeTraded={pOrder.VolumeTraded} "
+              f"CombOffsetFlag={pOrder.CombOffsetFlag} "
+              f"FrontID={pOrder.FrontID} "
+              f"SessionID={pOrder.SessionID} "
+              f"OrderRef={pOrder.OrderRef} "
+              )
 
     def OnRtnTrade(self, pTrade):
-        print(
-            f"OnRtnTrade:{pTrade.InstrumentID}, {pTrade.ExchangeID}, {pTrade.Direction}, {pTrade.Price},  {pTrade.Volume}")
+        print(f"OnRtnTrade:{pTrade.InstrumentID} "
+              f"ExchangeID={pTrade.ExchangeID} "
+              f"Direction={pTrade.Direction} "
+              f"Price={pTrade.Price}  "
+              f"Volume={pTrade.Volume} "
+              f'TradeID={pTrade.TradeID} '
+              f"OffsetFlag={pTrade.OffsetFlag} "
+              f"OrderSysID={pTrade.OrderSysID} "
+              )
 
     def OnRspQryInvestorPosition(self, pInvestorPosition: tdapi.CThostFtdcInvestorPositionField,
                                  pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
@@ -180,13 +210,27 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pInvestorPosition is not None:
-            print(f"OnRspInvestorPosition:{pInvestorPosition.InstrumentID}, "
-                  f"PosiDirection={pInvestorPosition.PosiDirection}, "
-                  f"HedgeFlag={pInvestorPosition.HedgeFlag}, "
-                  f"PositionDate={pInvestorPosition.PositionDate}, "
+            print(f"OnRspInvestorPosition:{pInvestorPosition.InstrumentID} "
+                  f"ExchangeID={pInvestorPosition.ExchangeID} "
+                  f"InstrumentID={pInvestorPosition.InstrumentID} "
+                  f"HedgeFlag={pInvestorPosition.HedgeFlag} "
+                  f"PositionDate={pInvestorPosition.PositionDate} "
+                  f"PosiDirection={pInvestorPosition.PosiDirection} "
+                  f"Position={pInvestorPosition.Position} "
                   f"YdPosition={pInvestorPosition.YdPosition} "
                   f"TodayPosition={pInvestorPosition.TodayPosition} "
-                  f"Position={pInvestorPosition.Position} ")
+                  f"UseMargin={pInvestorPosition.UseMargin} "
+                  f"PreMargin={pInvestorPosition.PreMargin} "
+                  f"FrozenMargin={pInvestorPosition.FrozenMargin} "
+                  f"Commission={pInvestorPosition.Commission} "
+                  f"FrozenCommission={pInvestorPosition.FrozenCommission} "
+                  f"CloseProfit={pInvestorPosition.CloseProfit} "
+                  f"LongFrozen={pInvestorPosition.LongFrozen} "
+                  f"ShortFrozen={pInvestorPosition.ShortFrozen} "
+                  f"PositionCost={pInvestorPosition.PositionCost} "
+                  f"OpenCost={pInvestorPosition.OpenCost} "
+                  f"SettlementPrice={pInvestorPosition.SettlementPrice} "
+                  )
 
         if bIsLast == True:
             print("Completed.")
@@ -199,7 +243,7 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pInvestorPositionDetail is not None:
-            print(f"OnRspInvestorPosition:{pInvestorPositionDetail.InstrumentID}, "
+            print(f"OnRspInvestorPosition:{pInvestorPositionDetail.InstrumentID} "
                   f"Direction={pInvestorPositionDetail.Direction} "
                   f"HedgeFlag={pInvestorPositionDetail.HedgeFlag} "
                   f"Volume={pInvestorPositionDetail.Volume} "
@@ -229,6 +273,10 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
                   f"OrderSysID={pOrder.OrderSysID} "
                   f"OrderStatus={pOrder.OrderStatus} "
                   f"VolumeTotal={pOrder.VolumeTotal} "
+                  f"CombOffsetFlag={pOrder.CombOffsetFlag} "
+                  f"FrontID={pOrder.FrontID} "
+                  f"SessionID={pOrder.SessionID} "
+                  f"OrderRef={pOrder.OrderRef} "
                   )
 
         if bIsLast == True:
@@ -242,12 +290,14 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
 
         if pTrade is not None:
             print(f"OnRspQryTrade: {InstrumentID} "
+                  f"ExchangeID={pTrade.ExchangeID} "
                   f'Direction={pTrade.Direction} '
                   f'TradeID={pTrade.TradeID} '
                   f'Price={pTrade.Price} '
                   f'Volume={pTrade.Volume} '
                   f'OffsetFlag={pTrade.OffsetFlag} '
                   f'HedgeFlag={pTrade.HedgeFlag} '
+                  f"OrderSysID={pTrade.OrderSysID} "
                   )
 
         if bIsLast == True:
@@ -264,9 +314,13 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
                   f"PreBalance={pTradingAccount.PreBalance} "
                   f"PreMargin={pTradingAccount.PreMargin} "
                   f"FrozenMargin={pTradingAccount.FrozenMargin} "
+                  f"CurrMargin={pTradingAccount.CurrMargin} "
                   f"Commission={pTradingAccount.Commission} "
+                  f"FrozenCommission={pTradingAccount.FrozenCommission} "
                   f"Available={pTradingAccount.Available} "
                   f"Balance={pTradingAccount.Balance} "
+                  f"CloseProfit={pTradingAccount.CloseProfit} "
+                  f"CurrencyID={pTradingAccount.CurrencyID} "
                   )
 
         if bIsLast == True:
@@ -280,19 +334,26 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
 
         if pDepthMarketData is not None:
             print(f":OnRspQryDepthMarketData: {pDepthMarketData.InstrumentID} "
+                  f"TradingDay={pDepthMarketData.TradingDay} "
                   f"LastPrice={pDepthMarketData.LastPrice} "
                   f"PreSettlementPrice={pDepthMarketData.PreSettlementPrice} "
+                  f"PreClosePrice={pDepthMarketData.PreClosePrice} "
+                  f"PreOpenInterest={pDepthMarketData.PreOpenInterest} "
                   f"OpenPrice={pDepthMarketData.OpenPrice} "
                   f"HighestPrice={pDepthMarketData.HighestPrice} "
                   f"LowestPrice={pDepthMarketData.LowestPrice} "
                   f"Volume={pDepthMarketData.Volume} "
                   f"OpenInterest={pDepthMarketData.OpenInterest} "
+                  f"CloseInterest={pDepthMarketData.ClosePrice} "
                   f"UpperLimitPrice={pDepthMarketData.UpperLimitPrice} "
                   f"LowerLimitPrice={pDepthMarketData.LowerLimitPrice} "
+                  f"SettlementPrice={pDepthMarketData.SettlementPrice} "
                   f"BidPrice1={pDepthMarketData.BidPrice1} "
                   f"BidVolume1={pDepthMarketData.BidVolume1} "
                   f"AskPrice1={pDepthMarketData.AskPrice1} "
                   f"AskVolume1={pDepthMarketData.AskVolume1} "
+                  f"UpdateTime={pDepthMarketData.UpdateTime} "
+                  f"ActionDay={pDepthMarketData.ActionDay} "
                   )
 
         if bIsLast == True:
