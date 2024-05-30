@@ -37,6 +37,7 @@ class Exchange:
 
 @dataclass
 class Product:
+    ExchangeID: str
     ProductID: str
     ProductName: str
 
@@ -308,6 +309,54 @@ class DepthMarketDataField:
     BandingUpperPrice: float = 0.0  # 上带价
     BandingLowerPrice: float = 0.0  # 下带价
 
+@dataclass
+class InstrumentCommissionRateField:
+    """合约手续费率"""
+
+    InvestorRange: str = ""  # 投资者范围
+    BrokerID: str = ""  # 经纪公司代码
+    InvestorID: str = ""  # 投资者代码
+    OpenRatioByMoney: float = 0.0  # 开仓手续费率
+    OpenRatioByVolume: float = 0.0  # 开仓手续费
+    CloseRatioByMoney: float = 0.0  # 平仓手续费率
+    CloseRatioByVolume: float = 0.0  # 平仓手续费
+    CloseTodayRatioByMoney: float = 0.0  # 平今手续费率
+    CloseTodayRatioByVolume: float = 0.0  # 平今手续费
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
+
+
+@dataclass
+class InstrumentMarginRateField:
+    """合约保证金率"""
+
+    InvestorRange: str = ""  # 投资者范围
+    BrokerID: str = ""  # 经纪公司代码
+    InvestorID: str = ""  # 投资者代码
+    HedgeFlag: str = ""  # 投机套保标志
+    LongMarginRatioByMoney: float = 0.0  # 多头保证金率
+    LongMarginRatioByVolume: float = 0.0  # 多头保证金费
+    ShortMarginRatioByMoney: float = 0.0  # 空头保证金率
+    ShortMarginRatioByVolume: float = 0.0  # 空头保证金费
+    IsRelative: int = 0  # 是否相对交易所收取
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
+
+
+@dataclass
+class InstrumentOrderCommRateField:
+    """当前报单手续费的详细内容"""
+
+    InvestorRange: str = ""  # 投资者范围
+    BrokerID: str = ""  # 经纪公司代码
+    InvestorID: str = ""  # 投资者代码
+    HedgeFlag: str = ""  # 投机套保标志
+    OrderCommByVolume: float = 0.0  # 报单手续费
+    OrderActionCommByVolume: float = 0.0  # 撤单手续费
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
+    OrderCommByTrade: float = 0.0  # 报单手续费
+    OrderActionCommByTrade: float = 0.0  # 撤单手续费
 
 def convert_field(src_instance, dst_field_class):
     dst_instance = dst_field_class()
@@ -336,6 +385,9 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         self.Orders = []
         self.Trades = []
         self.MarketData = []
+        self.CommissionRates = []
+        self.MarginRates = []
+        self.OrderCommRates = []
 
         tdapi.CThostFtdcTraderSpi.__init__(self)
         self.api: tdapi.CThostFtdcTraderApi = tdapi.CThostFtdcTraderApi.CreateFtdcTraderApi()
@@ -384,6 +436,32 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
     def QryDepthMarketData(self):
         req = tdapi.CThostFtdcQryDepthMarketDataField()
         self.api.ReqQryDepthMarketData(req, 0)
+
+    def QryDepthMarketData(self):
+        req = tdapi.CThostFtdcQryDepthMarketDataField()
+        self.api.ReqQryDepthMarketData(req, 0)
+
+    def QryDepthMarketData(self):
+        req = tdapi.CThostFtdcQryDepthMarketDataField()
+        self.api.ReqQryDepthMarketData(req, 0)
+
+    def QryCommissionRate(self):
+        req = tdapi.CThostFtdcQryInstrumentCommissionRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        self.api.ReqQryInstrumentCommissionRate(req, 0)
+
+    def QryMarginRate(self):
+        req = tdapi.CThostFtdcQryInstrumentMarginRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        self.api.ReqQryInstrumentMarginRate(req, 0)
+
+    def QryOrderCommRate(self):
+        req = tdapi.CThostFtdcQryInstrumentOrderCommRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        self.api.ReqQryInstrumentOrderCommRate(req, 0)
 
     def OnFrontConnected(self) -> "None":
         print("OnFrontConnected")
@@ -447,7 +525,7 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
             exit(-1)
         # print(f"OnRspQryProduct:{pProduct.ProductID}, {pProduct.ProductName}, {pProduct.ExchangeID}")
 
-        product = Product(ProductID = pProduct.ProductID, ProductName = pProduct.ProductName)
+        product = Product(ExchangeID = pProduct.ExchangeID, ProductID = pProduct.ProductID, ProductName = pProduct.ProductName)
         self.Products.append(product)
 
         if bIsLast is True:
@@ -553,6 +631,38 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         if bIsLast is True:
             semaphore.release()
 
+    def OnRspQryInstrumentCommissionRate(self, pInstrumentCommissionRate: tdapi.CThostFtdcInstrumentCommissionRateField,
+                                         pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentCommissionRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentCommissionRate:
+            CommissionRate = convert_field(pInstrumentCommissionRate, InstrumentCommissionRateField)
+            self.CommissionRates.append(CommissionRate)
+        if bIsLast is True:
+            semaphore.release()
+
+    def OnRspQryInstrumentMarginRate(self, pInstrumentMarginRate: tdapi.CThostFtdcInstrumentMarginRateField,
+                                     pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentMarginRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentMarginRate:
+            MarginRate = convert_field(pInstrumentMarginRate, InstrumentMarginRateField)
+            self.MarginRates.append(MarginRate)
+        if bIsLast is True:
+            semaphore.release()
+
+    def OnRspQryInstrumentOrderCommRate(self, pInstrumentOrderCommRate: tdapi.CThostFtdcInstrumentOrderCommRateField,
+                                        pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentOrderCommRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentOrderCommRate:
+            OrderCommRate = convert_field(pInstrumentOrderCommRate, InstrumentOrderCommRateField)
+            self.OrderCommRates.append(OrderCommRate)
+        if bIsLast is True:
+            semaphore.release()
 
 if __name__ == '__main__':
     if len(sys.argv) != 7:
@@ -575,41 +685,67 @@ if __name__ == '__main__':
     semaphore.acquire()
 
     # query exchange
+    print("querying exchange ...")
     ctpdump.QryExchange()
 
     # query product
     time.sleep(1)
     semaphore.acquire()
+    print("querying product ...")
     ctpdump.QryProduct()
 
     # query instrument
     time.sleep(1)
     semaphore.acquire()
+    print("querying instrument ...")
     ctpdump.QryInstrument()
+
+    # query CommissionRate
+    time.sleep(1)
+    semaphore.acquire()
+    print("querying CommissionRate ...")
+    ctpdump.QryCommissionRate()
+
+    # query MarginRate
+    time.sleep(1)
+    semaphore.acquire()
+    print("querying MarginRate ...")
+    ctpdump.QryMarginRate()
+
+    # query OrderCommRate
+    time.sleep(1)
+    semaphore.acquire()
+    print("querying OrderCommRate ...")
+    ctpdump.QryOrderCommRate()
 
     # query prices
     time.sleep(1)
     semaphore.acquire()
+    print("querying price ...")
     ctpdump.QryDepthMarketData()
 
     # query positions
     time.sleep(1)
     semaphore.acquire()
+    print("querying position ...")
     ctpdump.QryPosition()
 
     # query accounts
     time.sleep(1)
     semaphore.acquire()
+    print("querying account ...")
     ctpdump.QryTradingAccount()
 
     # query orders
     time.sleep(1)
     semaphore.acquire()
+    print("querying order ...")
     ctpdump.QryOrder()
 
     # query trades
     time.sleep(1)
     semaphore.acquire()
+    print("querying trade ...")
     ctpdump.QryTrade()
 
     # wait for completed.
@@ -624,10 +760,21 @@ if __name__ == '__main__':
     print("[{}]".format(jsonstr))
 
     print("Instruments:")
-    #print(json.dumps([instrument.__dict__ for instrument in ctpdump.Instruments]))
     jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(instrument) for instrument in ctpdump.Instruments])
     print("[{}]".format(jsonstr))
     
+    print("CommissionRates:")
+    jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.CommissionRates])
+    print("[{}]".format(jsonstr))
+
+    print("MarginRates:")
+    jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.MarginRates])
+    print("[{}]".format(jsonstr))
+
+    print("OrderCommRates:")
+    jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.OrderCommRates])
+    print("[{}]".format(jsonstr))
+
     print("DepthMarketData:")
     jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.MarketData])
     print("[{}]".format(jsonstr))

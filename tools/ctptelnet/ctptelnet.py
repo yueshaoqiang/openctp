@@ -88,6 +88,28 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         req.InstrumentID = InstrumentID
         self.api.ReqQryTrade(req, 0)
 
+    def QryCommissionRate(self, InstrumentID):
+        req = tdapi.CThostFtdcQryInstrumentCommissionRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        req.InstrumentID = InstrumentID
+        self.api.ReqQryInstrumentCommissionRate(req, 0)
+
+    def QryMarginRate(self, ExchangeID, InstrumentID):
+        req = tdapi.CThostFtdcQryInstrumentMarginRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        req.ExchangeID = ExchangeID
+        req.InstrumentID = InstrumentID
+        self.api.ReqQryInstrumentMarginRate(req, 0)
+
+    def QryOrderCommRate(self, InstrumentID):
+        req = tdapi.CThostFtdcQryInstrumentOrderCommRateField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        req.InstrumentID = InstrumentID
+        self.api.ReqQryInstrumentOrderCommRate(req, 0)
+
     def OnFrontConnected(self) -> "void":
         print("OnFrontConnected")
 
@@ -139,7 +161,8 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
 
         if pInstrument is not None:
             print(
-                f"OnRspQryInstrument:{pInstrument.InstrumentID} "
+                f"OnRspQryInstrument:"
+                f"InstrumentID={pInstrument.InstrumentID} "
                 f"InstrumentName={pInstrument.InstrumentName} "
                 f"ExchangeID={pInstrument.ExchangeID} "
                 f"ProductID={pInstrument.ProductID} "
@@ -359,6 +382,65 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         if bIsLast == True:
             print("Completed.")
 
+    def OnRspQryInstrumentCommissionRate(self, pInstrumentCommissionRate: tdapi.CThostFtdcInstrumentCommissionRateField,
+                                         pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentCommissionRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentCommissionRate is not None:
+            print(f"OnRspQryInstrumentCommissionRate:"
+                  f"ExchangeID={pInstrumentCommissionRate.ExchangeID} "
+                  f"InstrumentID={pInstrumentCommissionRate.InstrumentID} "
+                  f"InvestorRange={pInstrumentCommissionRate.InvestorRange} "
+                  f"InvestorID={pInstrumentCommissionRate.InvestorID} "
+                  f"OpenRatioByMoney={pInstrumentCommissionRate.OpenRatioByMoney} "
+                  f"OpenRatioByVolume={pInstrumentCommissionRate.OpenRatioByVolume} "
+                  f"CloseRatioByMoney={pInstrumentCommissionRate.CloseRatioByMoney} "
+                  f"CloseRatioByVolume={pInstrumentCommissionRate.CloseRatioByVolume} "
+                  f"CloseTodayRatioByMoney={pInstrumentCommissionRate.CloseTodayRatioByMoney} "
+                  f"CloseTodayRatioByVolume={pInstrumentCommissionRate.CloseTodayRatioByVolume} "
+                  )
+        if bIsLast == True:
+            print("Completed.")
+
+    def OnRspQryInstrumentMarginRate(self, pInstrumentMarginRate: tdapi.CThostFtdcInstrumentMarginRateField,
+                                     pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentMarginRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentMarginRate is not None:
+            print(f"OnRspQryInstrumentMarginRate:"
+                  f"ExchangeID={pInstrumentMarginRate.ExchangeID} "
+                  f"InstrumentID={pInstrumentMarginRate.InstrumentID} "
+                  f"InvestorRange={pInstrumentMarginRate.InvestorRange} "
+                  f"InvestorID={pInstrumentMarginRate.InvestorID} "
+                  f"HedgeFlag={pInstrumentMarginRate.HedgeFlag} "
+                  f"LongMarginRatioByMoney={pInstrumentMarginRate.LongMarginRatioByMoney} "
+                  f"LongMarginRatioByVolume={pInstrumentMarginRate.LongMarginRatioByVolume} "
+                  f"ShortMarginRatioByMoney={pInstrumentMarginRate.ShortMarginRatioByMoney} "
+                  f"ShortMarginRatioByVolume={pInstrumentMarginRate.ShortMarginRatioByVolume} "
+                  f"IsRelative={pInstrumentMarginRate.IsRelative} "
+                  )
+        if bIsLast == True:
+            print("Completed.")
+
+    def OnRspQryInstrumentOrderCommRate(self, pInstrumentOrderCommRate: tdapi.CThostFtdcInstrumentOrderCommRateField,
+                                        pRspInfo: tdapi.CThostFtdcRspInfoField, nRequestID: int, bIsLast: bool):
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInstrumentOrderCommRate failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pInstrumentOrderCommRate is not None:
+            print(f"OnRspQryInstrumentOrderCommRate:"
+                  f"ExchangeID={pInstrumentOrderCommRate.ExchangeID} "
+                  f"InstrumentID={pInstrumentOrderCommRate.InstrumentID} "
+                  f"InvestorRange={pInstrumentOrderCommRate.InvestorRange} "
+                  f"InvestorID={pInstrumentOrderCommRate.InvestorID} "
+                  f"HedgeFlag={pInstrumentOrderCommRate.HedgeFlag} "
+                  f"OrderCommByVolume={pInstrumentOrderCommRate.OrderCommByVolume} "
+                  f"OrderActionCommByVolume={pInstrumentOrderCommRate.OrderActionCommByVolume} "
+                  )
+        if bIsLast == True:
+            print("Completed.")
 
 def print_commands():
     print("Commands:")
@@ -372,6 +454,9 @@ def print_commands():
     print("{}: query position detail".format(command_query_position_detail))
     print("{}: query order".format(command_query_order))
     print("{}: query trade".format(command_query_trade))
+    print("{}: query CommissionRate".format(command_query_CommissionRate))
+    print("{}: query MarginRate".format(command_query_MarginRate))
+    print("{}: query OrderCommRate".format(command_query_OrderCommRate))
     print("{}: quit".format(command_quit))
     print("please enter a command number.")
 
@@ -415,6 +500,12 @@ if __name__ == '__main__':
     command_query_order = str(i)
     i = i + 1
     command_query_trade = str(i)
+    i = i + 1
+    command_query_CommissionRate = str(i)
+    i = i + 1
+    command_query_MarginRate = str(i)
+    i = i + 1
+    command_query_OrderCommRate = str(i)
     command_quit = 'q'
 
     while True:
@@ -449,5 +540,15 @@ if __name__ == '__main__':
             ctptelnet.QryPrice(ExchangeId, InstrumentID)
         elif command == command_query_account:
             ctptelnet.QryAccount()
+        elif command == command_query_CommissionRate:
+            InstrumentID = input("InstrumentID:(Default:All)")
+            ctptelnet.QryCommissionRate(InstrumentID)
+        elif command == command_query_MarginRate:
+            ExchangeId = input("ExchangeID: (Default:All)")
+            InstrumentID = input("InstrumentID:(Default:All)")
+            ctptelnet.QryMarginRate(ExchangeId, InstrumentID)
+        elif command == command_query_OrderCommRate:
+            InstrumentID = input("InstrumentID:(Default:All)")
+            ctptelnet.QryOrderCommRate(InstrumentID)
         elif command == command_quit:
             break
