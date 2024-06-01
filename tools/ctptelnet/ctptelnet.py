@@ -7,11 +7,8 @@ last modify: 2024/5/2
 
 import sys
 import threading
-
 from openctp_ctp import tdapi
-
-
-# import thosttraderapi as tdapi
+#import thosttraderapi as tdapi
 
 class CTPTelnet(tdapi.CThostFtdcTraderSpi):
     def __init__(self, host, broker, user, password, appid, authcode):
@@ -20,6 +17,11 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         self.password = password
         self.appid = appid
         self.authcode = authcode
+
+        self.TradingDay = ""
+        self.FrontID = 0
+        self.SessionID = 0
+        self.OrderRef = 0
 
         tdapi.CThostFtdcTraderSpi.__init__(self)
         self.api: tdapi.CThostFtdcTraderApi = tdapi.CThostFtdcTraderApi.CreateFtdcTraderApi()
@@ -53,6 +55,11 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         req.ExchangeID = ExchangeID
         req.InstrumentID = InstrumentID
         self.api.ReqQryDepthMarketData(req, 0)
+
+    def QryInvestor(self):
+        req = tdapi.CThostFtdcQryInvestorField()
+        req.BrokerID = self.broker
+        self.api.ReqQryInvestor(req, 0)
 
     def QryAccount(self):
         req = tdapi.CThostFtdcQryTradingAccountField()
@@ -110,6 +117,59 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         req.InstrumentID = InstrumentID
         self.api.ReqQryInstrumentOrderCommRate(req, 0)
 
+    def QryTradingCode(self):
+        req = tdapi.CThostFtdcQryTradingCodeField()
+        self.api.ReqQryTradingCode(req, 0)
+
+    def QrySettlementInfo(self, TradingDay):
+        req = tdapi.CThostFtdcQrySettlementInfoField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        req.TradingDay = TradingDay
+        self.api.ReqQrySettlementInfo(req, 0)
+
+    def ConfirmSettlementInfo(self):
+        req = tdapi.CThostFtdcSettlementInfoConfirmField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        self.api.ReqSettlementInfoConfirm(req, 0)
+
+    def OrderInsert(self, ExchangeID, InstrumentID, Direction, Offset, PriceType, Price, Volume, TimeCondition, VolumeCondition, MinVolume):
+        req = tdapi.CThostFtdcInputOrderField()
+        req.BrokerID = self.broker
+        req.UserID = self.user
+        req.InvestorID = self.user
+        req.ExchangeID = ExchangeID
+        req.InstrumentID = InstrumentID
+        req.Direction = Direction
+        req.CombOffsetFlag = Offset
+        req.CombHedgeFlag = tdapi.THOST_FTDC_HF_Speculation
+        req.OrderPriceType = PriceType
+        req.LimitPrice = float(Price)
+        req.VolumeTotalOriginal = int(Volume)
+        req.TimeCondition = TimeCondition
+        req.VolumeCondition = VolumeCondition
+        req.MinVolume = int(MinVolume)
+        req.OrderRef = str(self.OrderRef)
+        self.OrderRef = self.OrderRef + 1
+        req.ForceCloseReason = tdapi.THOST_FTDC_FCC_NotForceClose
+        req.ContingentCondition = tdapi.THOST_FTDC_CC_Immediately
+        self.api.ReqOrderInsert(req, 0)
+
+    def OrderCancel(self, ExchangeID, InstrumentID, OrderSysID, FrontID, SessionID, OrderRef):
+        req = tdapi.CThostFtdcInputOrderActionField()
+        req.BrokerID = self.broker
+        req.UserID = self.user
+        req.InvestorID = self.user
+        req.ExchangeID = ExchangeID
+        req.InstrumentID = InstrumentID
+        req.OrderSysID = OrderSysID
+        req.FrontID = int(FrontID)
+        req.SessionID = int(SessionID)
+        req.OrderRef = OrderRef
+        req.ActionFlag = tdapi.THOST_FTDC_AF_Delete
+        self.api.ReqOrderAction(req, 0)
+
     def OnFrontConnected(self) -> "void":
         print("OnFrontConnected")
 
@@ -149,9 +209,125 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
             print(f"Login failed. {pRspInfo.ErrorMsg}")
             exit(-1)
-        print(f"Login succeed. TradingDay: {pRspUserLogin.TradingDay}")
+        print(f"Login succeed. TradingDay: {pRspUserLogin.TradingDay}, MaxOrderRef: {pRspUserLogin.MaxOrderRef}, SystemName: {pRspUserLogin.SystemName}")
+        self.TradingDay = pRspUserLogin.TradingDay
+        self.FrontID = pRspUserLogin.FrontID
+        self.SessionID = pRspUserLogin.SessionID
+        self.OrderRef = 1
 
         semaphore.release()
+
+    def OnRspSettlementInfoConfirm(self, pSettlementInfoConfirm: "CThostFtdcSettlementInfoConfirmField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnRspSettlementInfoConfirm failed. {pRspInfo.ErrorMsg}")
+            exit(-1)
+        print(f"OnRspSettlementInfoConfirm: BrokerID:{pSettlementInfoConfirm.BrokerID}, InvestorID:{pSettlementInfoConfirm.InvestorID}, ConfirmDate:{pSettlementInfoConfirm.ConfirmDate}, ConfirmTime:{pSettlementInfoConfirm.ConfirmTime}, CurrencyID:{pSettlementInfoConfirm.CurrencyID}")
+
+    def OnRspOrderInsert(self, pInputOrder: "CThostFtdcInputOrderField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnRspOrderInsert failed: {pRspInfo.ErrorMsg}")
+
+        if pInputOrder is not None:
+            print(f"OnRspOrderInsert:"
+                  f"UserID={pInputOrder.UserID} "
+                  f"BrokerID={pInputOrder.BrokerID} "
+                  f"InvestorID={pInputOrder.InvestorID} "
+                  f"ExchangeID={pInputOrder.ExchangeID} "
+                  f"InstrumentID={pInputOrder.InstrumentID} "
+                  f"Direction={pInputOrder.Direction} "
+                  f"CombOffsetFlag={pInputOrder.CombOffsetFlag} "
+                  f"CombHedgeFlag={pInputOrder.CombHedgeFlag} "
+                  f"OrderPriceType={pInputOrder.OrderPriceType} "
+                  f"LimitPrice={pInputOrder.LimitPrice} "
+                  f"VolumeTotalOriginal={pInputOrder.VolumeTotalOriginal} "
+                  f"OrderRef={pInputOrder.OrderRef} "
+                  f"TimeCondition={pInputOrder.TimeCondition} "
+                  f"GTDDate={pInputOrder.GTDDate} "
+                  f"VolumeCondition={pInputOrder.VolumeCondition} "
+                  f"MinVolume={pInputOrder.MinVolume} "
+                  f"RequestID={pInputOrder.RequestID} "
+                  f"InvestUnitID={pInputOrder.InvestUnitID} "
+                  f"CurrencyID={pInputOrder.CurrencyID} "
+                  f"AccountID={pInputOrder.AccountID} "
+                  f"ClientID={pInputOrder.ClientID} "
+                  f"IPAddress={pInputOrder.IPAddress} "
+                  f"MacAddress={pInputOrder.MacAddress} "
+                  )
+
+    def OnRspOrderAction(self, pInputOrderAction: "CThostFtdcInputOrderActionField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnRspOrderAction failed: {pRspInfo.ErrorMsg}")
+
+        if pInputOrderAction is not None:
+            print(f"OnRspOrderAction:"
+                  f"UserID={pInputOrderAction.UserID} "
+                  f"ActionFlag={pInputOrderAction.ActionFlag} "
+                  f"OrderActionRef={pInputOrderAction.OrderActionRef} "
+                  f"BrokerID={pInputOrderAction.BrokerID} "
+                  f"InvestorID={pInputOrderAction.InvestorID} "
+                  f"ExchangeID={pInputOrderAction.ExchangeID} "
+                  f"InstrumentID={pInputOrderAction.InstrumentID} "
+                  f"FrontID={pInputOrderAction.FrontID} "
+                  f"SessionID={pInputOrderAction.SessionID} "
+                  f"OrderRef={pInputOrderAction.OrderRef} "
+                  f"OrderSysID={pInputOrderAction.OrderSysID} "
+                  f"InvestUnitID={pInputOrderAction.InvestUnitID} "
+                  f"IPAddress={pInputOrderAction.IPAddress} "
+                  f"MacAddress={pInputOrderAction.MacAddress} "
+                  )
+
+    def OnErrRtnOrderInsert(self, pInputOrder: "CThostFtdcInputOrderField", pRspInfo: "CThostFtdcRspInfoField") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnErrRtnOrderInsert failed: {pRspInfo.ErrorMsg}")
+
+        if pInputOrder is not None:
+            print(f"OnErrRtnOrderInsert:"
+                  f"UserID={pInputOrder.UserID} "
+                  f"BrokerID={pInputOrder.BrokerID} "
+                  f"InvestorID={pInputOrder.InvestorID} "
+                  f"ExchangeID={pInputOrder.ExchangeID} "
+                  f"InstrumentID={pInputOrder.InstrumentID} "
+                  f"Direction={pInputOrder.Direction} "
+                  f"CombOffsetFlag={pInputOrder.CombOffsetFlag} "
+                  f"CombHedgeFlag={pInputOrder.CombHedgeFlag} "
+                  f"OrderPriceType={pInputOrder.OrderPriceType} "
+                  f"LimitPrice={pInputOrder.LimitPrice} "
+                  f"VolumeTotalOriginal={pInputOrder.VolumeTotalOriginal} "
+                  f"OrderRef={pInputOrder.OrderRef} "
+                  f"TimeCondition={pInputOrder.TimeCondition} "
+                  f"GTDDate={pInputOrder.GTDDate} "
+                  f"VolumeCondition={pInputOrder.VolumeCondition} "
+                  f"MinVolume={pInputOrder.MinVolume} "
+                  f"RequestID={pInputOrder.RequestID} "
+                  f"InvestUnitID={pInputOrder.InvestUnitID} "
+                  f"CurrencyID={pInputOrder.CurrencyID} "
+                  f"AccountID={pInputOrder.AccountID} "
+                  f"ClientID={pInputOrder.ClientID} "
+                  f"IPAddress={pInputOrder.IPAddress} "
+                  f"MacAddress={pInputOrder.MacAddress} "
+                  )
+
+    def OnErrRtnOrderAction(self, pOrderAction: "CThostFtdcOrderActionField", pRspInfo: "CThostFtdcRspInfoField") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnErrRtnOrderAction failed: {pRspInfo.ErrorMsg}")
+
+        if pOrderAction is not None:
+            print(f"OnErrRtnOrderAction:"
+                  f"UserID={pOrderAction.UserID} "
+                  f"ActionFlag={pOrderAction.ActionFlag} "
+                  f"OrderActionRef={pOrderAction.OrderActionRef} "
+                  f"BrokerID={pOrderAction.BrokerID} "
+                  f"InvestorID={pOrderAction.InvestorID} "
+                  f"ExchangeID={pOrderAction.ExchangeID} "
+                  f"InstrumentID={pOrderAction.InstrumentID} "
+                  f"FrontID={pOrderAction.FrontID} "
+                  f"SessionID={pOrderAction.SessionID} "
+                  f"OrderRef={pOrderAction.OrderRef} "
+                  f"OrderSysID={pOrderAction.OrderSysID} "
+                  f"InvestUnitID={pOrderAction.InvestUnitID} "
+                  f"IPAddress={pOrderAction.IPAddress} "
+                  f"MacAddress={pOrderAction.MacAddress} "
+                  )
 
     def OnRspQryInstrument(self, pInstrument: tdapi.CThostFtdcInstrumentField, pRspInfo: "CThostFtdcRspInfoField",
                            nRequestID: "int", bIsLast: "bool") -> "void":
@@ -198,32 +374,74 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             print("Completed.")
 
     def OnRtnOrder(self, pOrder):
-        print(f"OnRtnOrder:{pOrder.InstrumentID} "
+        print(f"OnRtnOrder:"
+              f"UserID={pOrder.UserID} "
+              f"BrokerID={pOrder.BrokerID} "
+              f"InvestorID={pOrder.InvestorID} "
               f"ExchangeID={pOrder.ExchangeID} "
+              f"InstrumentID={pOrder.InstrumentID} "
               f"Direction={pOrder.Direction} "
+              f"CombOffsetFlag={pOrder.CombOffsetFlag} "
+              f"CombHedgeFlag={pOrder.CombHedgeFlag} "
+              f"OrderPriceType={pOrder.OrderPriceType} "
               f"LimitPrice={pOrder.LimitPrice} "
               f"VolumeTotalOriginal={pOrder.VolumeTotalOriginal} "
+              f"FrontID={pOrder.FrontID} "
+              f"SessionID={pOrder.SessionID} "
+              f"OrderRef={pOrder.OrderRef} "
+              f"TimeCondition={pOrder.TimeCondition} "
+              f"GTDDate={pOrder.GTDDate} "
+              f"VolumeCondition={pOrder.VolumeCondition} "
+              f"MinVolume={pOrder.MinVolume} "
+              f"RequestID={pOrder.RequestID} "
+              f"InvestUnitID={pOrder.InvestUnitID} "
+              f"CurrencyID={pOrder.CurrencyID} "
+              f"AccountID={pOrder.AccountID} "
+              f"ClientID={pOrder.ClientID} "
+              f"IPAddress={pOrder.IPAddress} "
+              f"MacAddress={pOrder.MacAddress} "
               f"OrderSysID={pOrder.OrderSysID} "
               f"OrderStatus={pOrder.OrderStatus} "
               f"StatusMsg={pOrder.StatusMsg} "
               f"VolumeTotal={pOrder.VolumeTotal} "
-              f"VolumeTotalOriginal={pOrder.VolumeTotalOriginal} "
               f"VolumeTraded={pOrder.VolumeTraded} "
-              f"CombOffsetFlag={pOrder.CombOffsetFlag} "
-              f"FrontID={pOrder.FrontID} "
-              f"SessionID={pOrder.SessionID} "
-              f"OrderRef={pOrder.OrderRef} "
+              f"OrderSubmitStatus={pOrder.OrderSubmitStatus} "
+              f"TradingDay={pOrder.TradingDay} "
+              f"InsertDate={pOrder.InsertDate} "
+              f"InsertTime={pOrder.InsertTime} "
+              f"UpdateTime={pOrder.UpdateTime} "
+              f"CancelTime={pOrder.CancelTime} "
+              f"UserProductInfo={pOrder.UserProductInfo} "
+              f"ActiveUserID={pOrder.ActiveUserID} "
+              f"BrokerOrderSeq={pOrder.BrokerOrderSeq} "
+              f"TraderID={pOrder.TraderID} "
+              f"ClientID={pOrder.ClientID} "
+              f"ParticipantID={pOrder.ParticipantID} "
+              f"OrderLocalID={pOrder.OrderLocalID} "
               )
 
     def OnRtnTrade(self, pTrade):
-        print(f"OnRtnTrade:{pTrade.InstrumentID} "
+        print(f"OnRtnTrade:"
+              f"BrokerID={pTrade.BrokerID} "
+              f"InvestorID={pTrade.InvestorID} "
               f"ExchangeID={pTrade.ExchangeID} "
+              f"InstrumentID={pTrade.InstrumentID} "
               f"Direction={pTrade.Direction} "
+              f"OffsetFlag={pTrade.OffsetFlag} "
+              f"HedgeFlag={pTrade.HedgeFlag} "
               f"Price={pTrade.Price}  "
               f"Volume={pTrade.Volume} "
-              f'TradeID={pTrade.TradeID} '
-              f"OffsetFlag={pTrade.OffsetFlag} "
               f"OrderSysID={pTrade.OrderSysID} "
+              f"OrderRef={pTrade.OrderRef} "
+              f'TradeID={pTrade.TradeID} '
+              f'TradeDate={pTrade.TradeDate} '
+              f'TradeTime={pTrade.TradeTime} '
+              f'ClientID={pTrade.ClientID} '
+              f'TradingDay={pTrade.TradingDay} '
+              f'OrderLocalID={pTrade.OrderLocalID} '
+              f'BrokerOrderSeq={pTrade.BrokerOrderSeq} '
+              f'InvestUnitID={pTrade.InvestUnitID} '
+              f'ParticipantID={pTrade.ParticipantID} '
               )
 
     def OnRspQryInvestorPosition(self, pInvestorPosition: tdapi.CThostFtdcInvestorPositionField,
@@ -266,7 +484,7 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pInvestorPositionDetail is not None:
-            print(f"OnRspInvestorPosition:{pInvestorPositionDetail.InstrumentID} "
+            print(f"OnRspQryInvestorPositionDetail:{pInvestorPositionDetail.InstrumentID} "
                   f"Direction={pInvestorPositionDetail.Direction} "
                   f"HedgeFlag={pInvestorPositionDetail.HedgeFlag} "
                   f"Volume={pInvestorPositionDetail.Volume} "
@@ -288,18 +506,50 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pOrder is not None:
-            print(f"OnRspQryOrder: {InstrumentID} "
+            print(f"OnRspQryOrder:"
+                  f"UserID={pOrder.UserID} "
+                  f"BrokerID={pOrder.BrokerID} "
+                  f"InvestorID={pOrder.InvestorID} "
                   f"ExchangeID={pOrder.ExchangeID} "
+                  f"InstrumentID={pOrder.InstrumentID} "
                   f"Direction={pOrder.Direction} "
+                  f"CombOffsetFlag={pOrder.CombOffsetFlag} "
+                  f"CombHedgeFlag={pOrder.CombHedgeFlag} "
+                  f"OrderPriceType={pOrder.OrderPriceType} "
                   f"LimitPrice={pOrder.LimitPrice} "
                   f"VolumeTotalOriginal={pOrder.VolumeTotalOriginal} "
-                  f"OrderSysID={pOrder.OrderSysID} "
-                  f"OrderStatus={pOrder.OrderStatus} "
-                  f"VolumeTotal={pOrder.VolumeTotal} "
-                  f"CombOffsetFlag={pOrder.CombOffsetFlag} "
                   f"FrontID={pOrder.FrontID} "
                   f"SessionID={pOrder.SessionID} "
                   f"OrderRef={pOrder.OrderRef} "
+                  f"TimeCondition={pOrder.TimeCondition} "
+                  f"GTDDate={pOrder.GTDDate} "
+                  f"VolumeCondition={pOrder.VolumeCondition} "
+                  f"MinVolume={pOrder.MinVolume} "
+                  f"RequestID={pOrder.RequestID} "
+                  f"InvestUnitID={pOrder.InvestUnitID} "
+                  f"CurrencyID={pOrder.CurrencyID} "
+                  f"AccountID={pOrder.AccountID} "
+                  f"ClientID={pOrder.ClientID} "
+                  f"IPAddress={pOrder.IPAddress} "
+                  f"MacAddress={pOrder.MacAddress} "
+                  f"OrderSysID={pOrder.OrderSysID} "
+                  f"OrderStatus={pOrder.OrderStatus} "
+                  f"StatusMsg={pOrder.StatusMsg} "
+                  f"VolumeTotal={pOrder.VolumeTotal} "
+                  f"VolumeTraded={pOrder.VolumeTraded} "
+                  f"OrderSubmitStatus={pOrder.OrderSubmitStatus} "
+                  f"TradingDay={pOrder.TradingDay} "
+                  f"InsertDate={pOrder.InsertDate} "
+                  f"InsertTime={pOrder.InsertTime} "
+                  f"UpdateTime={pOrder.UpdateTime} "
+                  f"CancelTime={pOrder.CancelTime} "
+                  f"UserProductInfo={pOrder.UserProductInfo} "
+                  f"ActiveUserID={pOrder.ActiveUserID} "
+                  f"BrokerOrderSeq={pOrder.BrokerOrderSeq} "
+                  f"TraderID={pOrder.TraderID} "
+                  f"ClientID={pOrder.ClientID} "
+                  f"ParticipantID={pOrder.ParticipantID} "
+                  f"OrderLocalID={pOrder.OrderLocalID} "
                   )
 
         if bIsLast == True:
@@ -312,15 +562,27 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pTrade is not None:
-            print(f"OnRspQryTrade: {InstrumentID} "
+            print(f"OnRspQryTrade:"
+                  f"BrokerID={pTrade.BrokerID} "
+                  f"InvestorID={pTrade.InvestorID} "
                   f"ExchangeID={pTrade.ExchangeID} "
-                  f'Direction={pTrade.Direction} '
-                  f'TradeID={pTrade.TradeID} '
-                  f'Price={pTrade.Price} '
-                  f'Volume={pTrade.Volume} '
-                  f'OffsetFlag={pTrade.OffsetFlag} '
-                  f'HedgeFlag={pTrade.HedgeFlag} '
+                  f"InstrumentID={pTrade.InstrumentID} "
+                  f"Direction={pTrade.Direction} "
+                  f"OffsetFlag={pTrade.OffsetFlag} "
+                  f"HedgeFlag={pTrade.HedgeFlag} "
+                  f"Price={pTrade.Price}  "
+                  f"Volume={pTrade.Volume} "
                   f"OrderSysID={pTrade.OrderSysID} "
+                  f"OrderRef={pTrade.OrderRef} "
+                  f'TradeID={pTrade.TradeID} '
+                  f'TradeDate={pTrade.TradeDate} '
+                  f'TradeTime={pTrade.TradeTime} '
+                  f'ClientID={pTrade.ClientID} '
+                  f'TradingDay={pTrade.TradingDay} '
+                  f'OrderLocalID={pTrade.OrderLocalID} '
+                  f'BrokerOrderSeq={pTrade.BrokerOrderSeq} '
+                  f'InvestUnitID={pTrade.InvestUnitID} '
+                  f'ParticipantID={pTrade.ParticipantID} '
                   )
 
         if bIsLast == True:
@@ -349,6 +611,20 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         if bIsLast == True:
             print("Completed.")
 
+    def OnRspQryInvestor(self, pInvestor: "CThostFtdcInvestorField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f"OnRspQryDepthMarketData failed: {pRspInfo.ErrorMsg}")
+            return
+
+        if pInvestor is not None:
+            print(f"OnRspQryInvestor: "
+                  f"InvestorID={pInvestor.InvestorID} "
+                  f"InvestorName={pInvestor.InvestorName} "
+                  f"Telephone={pInvestor.Telephone} "
+                  )
+
+        if bIsLast == True:
+            print("Completed.")
     def OnRspQryDepthMarketData(self, pDepthMarketData: tdapi.CThostFtdcDepthMarketDataField,
                                 pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
@@ -356,27 +632,29 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
             return
 
         if pDepthMarketData is not None:
-            print(f":OnRspQryDepthMarketData: {pDepthMarketData.InstrumentID} "
-                  f"TradingDay={pDepthMarketData.TradingDay} "
+            print(f"OnRspQryDepthMarketData: "
+                  f"InstrumentID={pDepthMarketData.InstrumentID}"
                   f"LastPrice={pDepthMarketData.LastPrice} "
-                  f"PreSettlementPrice={pDepthMarketData.PreSettlementPrice} "
-                  f"PreClosePrice={pDepthMarketData.PreClosePrice} "
-                  f"PreOpenInterest={pDepthMarketData.PreOpenInterest} "
+                  f"Volume={pDepthMarketData.Volume} "
                   f"OpenPrice={pDepthMarketData.OpenPrice} "
                   f"HighestPrice={pDepthMarketData.HighestPrice} "
                   f"LowestPrice={pDepthMarketData.LowestPrice} "
-                  f"Volume={pDepthMarketData.Volume} "
+                  f"ClosePrice={pDepthMarketData.ClosePrice} "
                   f"OpenInterest={pDepthMarketData.OpenInterest} "
-                  f"CloseInterest={pDepthMarketData.ClosePrice} "
                   f"UpperLimitPrice={pDepthMarketData.UpperLimitPrice} "
                   f"LowerLimitPrice={pDepthMarketData.LowerLimitPrice} "
                   f"SettlementPrice={pDepthMarketData.SettlementPrice} "
+                  f"PreSettlementPrice={pDepthMarketData.PreSettlementPrice} "
+                  f"PreClosePrice={pDepthMarketData.PreClosePrice} "
+                  f"PreOpenInterest={pDepthMarketData.PreOpenInterest} "
                   f"BidPrice1={pDepthMarketData.BidPrice1} "
                   f"BidVolume1={pDepthMarketData.BidVolume1} "
                   f"AskPrice1={pDepthMarketData.AskPrice1} "
                   f"AskVolume1={pDepthMarketData.AskVolume1} "
                   f"UpdateTime={pDepthMarketData.UpdateTime} "
+                  f"UpdateMillisec={pDepthMarketData.UpdateMillisec} "
                   f"ActionDay={pDepthMarketData.ActionDay} "
+                  f"TradingDay={pDepthMarketData.TradingDay} "
                   )
 
         if bIsLast == True:
@@ -441,6 +719,38 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
                   )
         if bIsLast == True:
             print("Completed.")
+    def OnRspQryTradingCode(self, pTradingCode: "CThostFtdcTradingCodeField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryTradingCode failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pTradingCode is not None:
+            print(f"OnRspQryTradingCode:"
+                  f"BrokerID={pTradingCode.BrokerID} "
+                  f"InvestorID={pTradingCode.InvestorID} "
+                  f"ExchangeID={pTradingCode.ExchangeID} "
+                  f"ClientID={pTradingCode.ClientID} "
+                  )
+        if bIsLast == True:
+            print("Completed.")
+    def OnRspQrySettlementInfo(self, pSettlementInfo: "CThostFtdcSettlementInfoField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQrySettlementInfo failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+        if pSettlementInfo is not None:
+            # print(f"OnRspQrySettlementInfo:TradingDay={pSettlementInfo.TradingDay},InvestorID={pSettlementInfo.InvestorID},CurrencyID={pSettlementInfo.CurrencyID},Content={pSettlementInfo.Content}")
+            print(pSettlementInfo.Content)
+        if bIsLast == True:
+            print("Completed.")
+
+    def OnRtnInstrumentStatus(self, pInstrumentStatus: "CThostFtdcInstrumentStatusField") -> "void":
+        print(f"OnRtnInstrumentStatus:"
+              f"ExchangeID={pInstrumentStatus.ExchangeID} "
+              f"InstrumentID={pInstrumentStatus.InstrumentID} "
+              f"InstrumentStatus={pInstrumentStatus.InstrumentStatus}  "
+              f"TradingSegmentSN={pInstrumentStatus.TradingSegmentSN} "
+              f'EnterTime={pInstrumentStatus.EnterTime} '
+              f"EnterReason={pInstrumentStatus.EnterReason} "
+              )
 
 def print_commands():
     print("Commands:")
@@ -457,7 +767,14 @@ def print_commands():
     print("{}: query CommissionRate".format(command_query_CommissionRate))
     print("{}: query MarginRate".format(command_query_MarginRate))
     print("{}: query OrderCommRate".format(command_query_OrderCommRate))
+    print("{}: query investor".format(command_query_investor))
+    print("{}: query tradingcode".format(command_query_tradingcode))
+    print("{}: query settlement".format(command_query_settlement))
+    print("{}: confirm settlement".format(command_SettlementInfoConfirm))
+    print("{}: order insert".format(command_order_insert))
+    print("{}: order cancel".format(command_order_cancel))
     print("{}: quit".format(command_quit))
+
     print("please enter a command number.")
 
 
@@ -506,22 +823,35 @@ if __name__ == '__main__':
     command_query_MarginRate = str(i)
     i = i + 1
     command_query_OrderCommRate = str(i)
+    i = i + 1
+    command_query_investor = str(i)
+    i = i + 1
+    command_query_tradingcode = str(i)
+    i = i + 1
+    command_query_settlement = str(i)
+    i = i + 1
+    command_SettlementInfoConfirm = str(i)
+    i = i + 1
+    command_order_insert = str(i)
+    i = i + 1
+    command_order_cancel = str(i)
+
     command_quit = 'q'
 
     while True:
         print_commands()
         command = input("")
         if command == command_query_instrument:
-            exchangeid = input("ExchangeID: (Default:All)")
-            productid = input("ProductID: (Default:All)")
-            instrumentid = input("InstrumentID: (Default:All)")
-            ctptelnet.QryInstrument(exchangeid, productid, instrumentid)
+            ExchangeID = input("ExchangeID: (Default:All)")
+            ProductID = input("ProductID: (Default:All)")
+            InstrumentID = input("InstrumentID: (Default:All)")
+            ctptelnet.QryInstrument(ExchangeID, ProductID, InstrumentID)
         elif command == command_query_exchange:
             ctptelnet.QryExchange()
         elif command == command_query_product:
-            ExchangeId = input("ExchangeID: (Default:All)")
-            ProductId = input("ProductID: (Default:All)")
-            ctptelnet.QryProduct(ExchangeId, ProductId)
+            ExchangeID = input("ExchangeID: (Default:All)")
+            ProductID = input("ProductID: (Default:All)")
+            ctptelnet.QryProduct(ExchangeID, ProductID)
         elif command == command_query_position:
             InstrumentID = input("InstrumentID:(Default:All)")
             ctptelnet.QryPosition(InstrumentID)
@@ -535,20 +865,57 @@ if __name__ == '__main__':
             InstrumentID = input("InstrumentID:(Default:All)")
             ctptelnet.QryTrade(InstrumentID)
         elif command == command_query_price:
-            ExchangeId = input("ExchangeID: (Default:All)")
+            ExchangeID = input("ExchangeID: (Default:All)")
             InstrumentID = input("InstrumentID:(Default:All)")
-            ctptelnet.QryPrice(ExchangeId, InstrumentID)
+            ctptelnet.QryPrice(ExchangeID, InstrumentID)
         elif command == command_query_account:
             ctptelnet.QryAccount()
         elif command == command_query_CommissionRate:
             InstrumentID = input("InstrumentID:(Default:All)")
             ctptelnet.QryCommissionRate(InstrumentID)
         elif command == command_query_MarginRate:
-            ExchangeId = input("ExchangeID: (Default:All)")
+            ExchangeID = input("ExchangeID: (Default:All)")
             InstrumentID = input("InstrumentID:(Default:All)")
-            ctptelnet.QryMarginRate(ExchangeId, InstrumentID)
+            ctptelnet.QryMarginRate(ExchangeID, InstrumentID)
         elif command == command_query_OrderCommRate:
             InstrumentID = input("InstrumentID:(Default:All)")
             ctptelnet.QryOrderCommRate(InstrumentID)
+        elif command == command_query_investor:
+            ctptelnet.QryInvestor()
+        elif command == command_query_tradingcode:
+            ctptelnet.QryTradingCode()
+        elif command == command_query_settlement:
+            TradingDay = input("TradingDay:(Default:All)")
+            ctptelnet.QrySettlementInfo(TradingDay)
+        elif command == command_SettlementInfoConfirm:
+            ctptelnet.ConfirmSettlementInfo()
+        elif command == command_order_insert:
+            ExchangeID = input("ExchangeID:")
+            InstrumentID = input("InstrumentID:")
+            Direction = input("Direction:0,买入;1,卖出")
+            Offset = input("Offset:0,开仓;1,平仓;2,强平;3,平今;4,平昨;5,强减")
+            PriceType = input("PriceType:1,任意价;2,限价(Default:2)")
+            if PriceType == "":
+                PriceType = "2"
+            Price = input("Price:")
+            Volume = input("Volume:")
+            TimeCondition = input("TimeCondition:1,IOC;3,GFD(Default:3)")
+            if TimeCondition == "":
+                TimeCondition = "3"
+            VolumeCondition = input("VolumeCondition:1,任何数量;2,最小数量;3,全部数量(Default:1)")
+            if VolumeCondition == "":
+                VolumeCondition = "1"
+            MinVolume = input("MinVolume: (Default:1)")
+            if MinVolume == "":
+                MinVolume = "1"
+            ctptelnet.OrderInsert(ExchangeID, InstrumentID, Direction, Offset, PriceType, Price, Volume, TimeCondition, VolumeCondition, MinVolume)
+        elif command == command_order_cancel:
+            ExchangeID = input("ExchangeID:")
+            InstrumentID = input("InstrumentID:")
+            OrderSysID = input("OrderSysID:")
+            FrontID = input("FrontID:")
+            SessionID = input("SessionID:")
+            OrderRef = input("OrderRef:")
+            ctptelnet.OrderCancel(ExchangeID, InstrumentID, OrderSysID, FrontID, SessionID, OrderRef)
         elif command == command_quit:
             break
