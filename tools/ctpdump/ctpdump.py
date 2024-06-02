@@ -20,26 +20,56 @@ def adjust_price(price: float) -> float:
 
 
 @dataclass
-class Instrument:
-    InstrumentID: str
-    InstrumentName: str
-    ExchangeID: str
-    ProductClass: str
-    ProductID: str
-    PriceTick: float
+class InstrumentField:
+    ExchangeID: str = ""
+    InstrumentID: str = ""
+    InstrumentName: str = ""
+    ProductClass: str = ""
+    ProductID: str = ""
+    PriceTick: float = 0.0
+    VolumeMultiple: int = 0
+    DeliveryYear: int = 0
+    DeliveryMonth: int = 0
+    MaxMarketOrderVolume: int = 0
+    MinMarketOrderVolume: int = 0
+    MaxLimitOrderVolume: int = 0
+    MinLimitOrderVolume: int = 0
+    OpenDate: str = ""
+    ExpireDate: str = ""
+    StartDelivDate: str = ""
+    EndDelivDate: str = ""
+    InstLifePhase: str = ""
+    IsTrading: int = 0
+    PositionType: str = ""
+    PositionDateType: str = ""
+    LongMarginRatio: float = 0.0
+    ShortMarginRatio: float = 0.0
+    MaxMarginSideAlgorithm: str = ""
+    UnderlyingInstrID: str = ""
+    StrikePrice: float = 0
+    OptionsType: str = ""
+    UnderlyingMultiple: int = 0
+    CombinationType: str = ""
 
 
 @dataclass
-class Exchange:
-    ExchangeID: str
-    ExchangeName: str
+class ExchangeField:
+    ExchangeID: str = ""
+    ExchangeName: str = ""
 
 
 @dataclass
-class Product:
-    ExchangeID: str
-    ProductID: str
-    ProductName: str
+class ProductField:
+    ExchangeID: str = ""
+    ProductID: str = ""
+    ProductName: str = ""
+    ProductClass: str = ""
+    VolumeMultiple: int = 0
+    PriceTick: float = 0.0
+    PositionType: str = ""
+    PositionDateType: str = ""
+    TradeCurrencyID: str = ""
+    UnderlyingMultiple: int = 0
 
 
 @dataclass
@@ -262,22 +292,22 @@ class TradeField:
 class DepthMarketDataField:
     """深度行情"""
 
-    TradingDay: str = ""  # 交易日
     ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
     LastPrice: float = 0.0  # 最新价
-    PreSettlementPrice: float = 0.0  # 上次结算价
-    PreClosePrice: float = 0.0  # 昨收盘
-    PreOpenInterest: float = 0.0  # 昨持仓量
+    Volume: int = 0  # 数量
+    Turnover: float = 0.0  # 成交金额
     OpenPrice: float = 0.0  # 今开盘
     HighestPrice: float = 0.0  # 最高价
     LowestPrice: float = 0.0  # 最低价
-    Volume: int = 0  # 数量
-    Turnover: float = 0.0  # 成交金额
-    OpenInterest: float = 0.0  # 持仓量
     ClosePrice: float = 0.0  # 今收盘
-    SettlementPrice: float = 0.0  # 本次结算价
     UpperLimitPrice: float = 0.0  # 涨停板价
     LowerLimitPrice: float = 0.0  # 跌停板价
+    OpenInterest: float = 0.0  # 持仓量
+    SettlementPrice: float = 0.0  # 本次结算价
+    PreSettlementPrice: float = 0.0  # 上次结算价
+    PreClosePrice: float = 0.0  # 昨收盘
+    PreOpenInterest: float = 0.0  # 昨持仓量
     PreDelta: float = 0.0  # 昨虚实度
     CurrDelta: float = 0.0  # 今虚实度
     UpdateTime: str = ""  # 最后修改时间
@@ -303,8 +333,8 @@ class DepthMarketDataField:
     AskPrice5: float = 0.0  # 申卖价五
     AskVolume5: int = 0  # 申卖量五
     AveragePrice: float = 0.0  # 当日均价
+    TradingDay: str = ""  # 交易日
     ActionDay: str = ""  # 业务日期
-    InstrumentID: str = ""  # 合约代码
     ExchangeInstID: str = ""  # 合约在交易所的代码
     BandingUpperPrice: float = 0.0  # 上带价
     BandingLowerPrice: float = 0.0  # 下带价
@@ -313,48 +343,48 @@ class DepthMarketDataField:
 class InstrumentCommissionRateField:
     """合约手续费率"""
 
-    InvestorRange: str = ""  # 投资者范围
     BrokerID: str = ""  # 经纪公司代码
     InvestorID: str = ""  # 投资者代码
+    InvestorRange: str = ""  # 投资者范围
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
     OpenRatioByMoney: float = 0.0  # 开仓手续费率
     OpenRatioByVolume: float = 0.0  # 开仓手续费
     CloseRatioByMoney: float = 0.0  # 平仓手续费率
     CloseRatioByVolume: float = 0.0  # 平仓手续费
     CloseTodayRatioByMoney: float = 0.0  # 平今手续费率
     CloseTodayRatioByVolume: float = 0.0  # 平今手续费
-    ExchangeID: str = ""  # 交易所代码
-    InstrumentID: str = ""  # 合约代码
 
 
 @dataclass
 class InstrumentMarginRateField:
     """合约保证金率"""
 
-    InvestorRange: str = ""  # 投资者范围
     BrokerID: str = ""  # 经纪公司代码
     InvestorID: str = ""  # 投资者代码
+    InvestorRange: str = ""  # 投资者范围
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
     HedgeFlag: str = ""  # 投机套保标志
     LongMarginRatioByMoney: float = 0.0  # 多头保证金率
     LongMarginRatioByVolume: float = 0.0  # 多头保证金费
     ShortMarginRatioByMoney: float = 0.0  # 空头保证金率
     ShortMarginRatioByVolume: float = 0.0  # 空头保证金费
     IsRelative: int = 0  # 是否相对交易所收取
-    ExchangeID: str = ""  # 交易所代码
-    InstrumentID: str = ""  # 合约代码
 
 
 @dataclass
 class InstrumentOrderCommRateField:
     """当前报单手续费的详细内容"""
 
-    InvestorRange: str = ""  # 投资者范围
     BrokerID: str = ""  # 经纪公司代码
     InvestorID: str = ""  # 投资者代码
+    InvestorRange: str = ""  # 投资者范围
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
     HedgeFlag: str = ""  # 投机套保标志
     OrderCommByVolume: float = 0.0  # 报单手续费
     OrderActionCommByVolume: float = 0.0  # 撤单手续费
-    ExchangeID: str = ""  # 交易所代码
-    InstrumentID: str = ""  # 合约代码
     OrderCommByTrade: float = 0.0  # 报单手续费
     OrderActionCommByTrade: float = 0.0  # 撤单手续费
 
@@ -503,7 +533,7 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
             print(f"Login failed. {pRspInfo.ErrorMsg}")
             exit(-1)
-        print(f"Login succeed. TradingDay: {pRspUserLogin.TradingDay}")
+        print(f"Login succeed. TradingDay: {pRspUserLogin.TradingDay}, MaxOrderRef: {pRspUserLogin.MaxOrderRef}, SystemName: {pRspUserLogin.SystemName}")
 
         semaphore.release()
 
@@ -513,8 +543,9 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
             exit(-1)
         # print(f"OnRspQryExchange:{pExchange.ExchangeID}, {pExchange.ExchangeName}")
 
-        exchange = Exchange(ExchangeID = pExchange.ExchangeID, ExchangeName = pExchange.ExchangeName)
-        self.Exchanges.append(exchange)
+        if pExchange:
+            exchange = convert_field(pExchange, ExchangeField)
+            self.Exchanges.append(exchange)
 
         if bIsLast is True:
             semaphore.release()
@@ -525,8 +556,10 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
             exit(-1)
         # print(f"OnRspQryProduct:{pProduct.ProductID}, {pProduct.ProductName}, {pProduct.ExchangeID}")
 
-        product = Product(ExchangeID = pProduct.ExchangeID, ProductID = pProduct.ProductID, ProductName = pProduct.ProductName)
-        self.Products.append(product)
+        if pProduct:
+            product = convert_field(pProduct, ProductField)
+            product.UnderlyingMultiple = adjust_price(pProduct.UnderlyingMultiple)
+            self.Products.append(product)
 
         if bIsLast is True:
             semaphore.release()
@@ -543,13 +576,13 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
             exit(-1)
         # print(f"OnRspQryInstrument:{pInstrument.InstrumentID}, {pInstrument.InstrumentName}, ExchangeID:{pInstrument.ExchangeID}")
 
-        instrument = Instrument(InstrumentID = pInstrument.InstrumentID,
-                                InstrumentName = pInstrument.InstrumentName,
-                                ProductID = pInstrument.ProductID,
-                                ProductClass = pInstrument.ProductClass,
-                                ExchangeID = pInstrument.ExchangeID,
-                                PriceTick = pInstrument.PriceTick)
-        self.Instruments.append(instrument)
+        if pInstrument:
+            instrument = convert_field(pInstrument, InstrumentField)
+            instrument.UnderlyingMultiple = adjust_price(pInstrument.UnderlyingMultiple)
+            instrument.StrikePrice = adjust_price(pInstrument.StrikePrice)
+            instrument.LongMarginRatio = adjust_price(pInstrument.LongMarginRatio)
+            instrument.ShortMarginRatio = adjust_price(pInstrument.ShortMarginRatio)
+            self.Instruments.append(instrument)
 
         if bIsLast is True:
             semaphore.release()
