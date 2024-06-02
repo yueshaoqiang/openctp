@@ -124,11 +124,6 @@ openctp还提供了对几十家主流期货公司CTP柜台实盘环境的监控�
 - [TBTerminalCTP（交易开拓者）](https://zhuanlan.zhihu.com/p/437818698)
 <img src="https://user-images.githubusercontent.com/83346523/149624377-01c97148-9e34-4f2b-8bb3-c43b57340284.png" alt="TBTerminal" width="700" height="400" />
 
-# **粉丝交流QQ群：127235179**
-
-# 实盘交易
-openctp有合作的证券和期货公司，不仅交易费用低并且还有免费的技术服务，具体请关注openctp公众号，回复“咨询”两个字。
-
 # openctp培训服务
 openctp提供证券期货交易开发方面的技术培训，也提供行业无关的基础技术培训，openctp的培训偏向于就业方向，比如想去私募或者科技公司从事量化或者柜台系统开发的比较适合，当然如果想自己学习一些技术帮助自己更好地做交易也是可以的。openctp的培训是迭代式的，会不断更新，补充更多的内容，同学可在相应课程的群内永久交流。所有课程的每节课在B站上都有试看视频，报培训只需要在openctp的公众号回复培训两个字即可获取联系方式。
 
@@ -146,6 +141,15 @@ openctp做了一些免费的0基础学习课程，帮助更多朋友进入到软
 - [C语言公开课](https://www.bilibili.com/video/BV1CK411o743)：以生动有趣的方式讲C语言基础性编程技术，重在兴趣培养和信心建立。
 - C++语言公开课：以生动有趣的方式讲C++语言基础性编程技术，课程在准备中。
 - [Linux环境编程公开课](https://www.bilibili.com/video/BV1Jw411E7sF)：介绍Unix&Linux的前世今世，讲Shell、VI编辑器等使用，讲netstat、traceroute、ifconfig、lsof等网络工具的使用，讲正则表达式等等，0基础，谁都能听得懂。
+
+# 实盘交易
+openctp有合作的券商和期货公司，不仅交易费用低并且还可以得到免费的技术支持服务（CTP、XTP等接口与应用开发培训等），具体请关注openctp公众号，回复“咨询”两个字。
+
+# 技术交流
+QQ群：127235179
+
+# openctp官网
+[www.openctp.cn](http://www.openctp.cn/)
 
 # openctp公众号
 <img src="https://user-images.githubusercontent.com/83346523/225707613-59293970-0f04-4056-8ea4-dd4596a4efec.png" alt="微信公众号" width="300" height="350" />
