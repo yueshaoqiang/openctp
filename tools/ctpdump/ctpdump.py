@@ -78,6 +78,8 @@ class InvestorPositionField:
 
     BrokerID: str = ""  # 经纪公司代码
     InvestorID: str = ""  # 投资者代码
+    ExchangeID: str = ""  # 交易所代码
+    InstrumentID: str = ""  # 合约代码
     PosiDirection: str = ""  # 持仓多空方向
     HedgeFlag: str = ""  # 投机套保标志
     PositionDate: str = ""  # 持仓日期
@@ -118,13 +120,43 @@ class InvestorPositionField:
     StrikeFrozen: int = 0  # 执行冻结
     StrikeFrozenAmount: float = 0.0  # 执行冻结金额
     AbandonFrozen: int = 0  # 放弃执行冻结
-    ExchangeID: str = ""  # 交易所代码
     YdStrikeFrozen: int = 0  # 执行冻结的昨仓
     InvestUnitID: str = ""  # 投资单元代码
     PositionCostOffset: float = 0.0  # 持仓成本差值
     TasPosition: int = 0  # tas持仓手数
     TasPositionCost: float = 0.0  # tas持仓成本
+
+
+@dataclass
+class InvestorPositionDetailField:
+    """持仓明细"""
+    BrokerID: str = ""  # 经纪公司代码
+    InvestorID: str = ""  # 投资者代码
+    ExchangeID: str = ""  # 交易所代码
     InstrumentID: str = ""  # 合约代码
+    Direction: str = ""  # 多空方向
+    HedgeFlag: str = ""  # 投机套保标志
+    OpenDate: str = ""  # 开仓日期
+    TradeID: str = ""  # 成交编号
+    Volume: int = 0  # 数量
+    OpenPrice: float = 0.0  # 开仓价
+    TradeType: str = ""  # 成交类型
+    TradingDay: str = ""  # 交易日
+    SettlementID: int = 0  # 结算编号
+    CloseProfitByDate: int = 0  # 逐日盯市平仓盈亏
+    CloseProfitByTrade: int = 0  # 逐笔对冲平仓盈亏
+    PositionProfitByDate: float = 0.0  # 逐日盯市持仓盈亏
+    PositionProfitByTrade: float = 0.0  # 逐笔对冲持仓盈亏
+    Margin: int = 0  # 投资者保证金
+    ExchMargin: int = 0  # 交易所保证金
+    MarginRateByMoney: float = 0.0  # 保证金率
+    MarginRateByVolume: float = 0.0  # 保证金率(按手数)
+    LastSettlementPrice: float = 0.0  # 昨结算价
+    SettlementPrice: float = 0.0  # 结算价
+    CloseVolume: float = 0.0  # 平仓量
+    CloseAmount: float = 0.0  # 平仓金额
+    TimeFirstVolume: float = 0.0  # 按照时间顺序平仓的笔数,大商所专用
+    InvestUnitID: float = 0.0  # 投资单元代码
 
 
 @dataclass
@@ -411,6 +443,7 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         self.Products = []
         self.Instruments = []
         self.Positions = []
+        self.PositionDetails = []
         self.TradingAccount = []
         self.Orders = []
         self.Trades = []
@@ -444,7 +477,13 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         req.BrokerID = self.broker
         req.InvestorID = self.user
         self.api.ReqQryInvestorPosition(req, 0)
-    
+
+    def QryPositionDetail(self):
+        req = tdapi.CThostFtdcQryInvestorPositionDetailField()
+        req.BrokerID = self.broker
+        req.InvestorID = self.user
+        self.api.ReqQryInvestorPositionDetail(req, 0)
+
     def QryTradingAccount(self):
         req = tdapi.CThostFtdcQryTradingAccountField()
         req.BrokerID = self.broker
@@ -597,7 +636,18 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
             self.Positions.append(position)
         if bIsLast is True:
             semaphore.release()
-    
+
+    def OnRspQryInvestorPositionDetail(self, pInvestorPositionDetail: "CThostFtdcInvestorPositionDetailField", pRspInfo: "CThostFtdcRspInfoField", nRequestID: "int", bIsLast: "bool") -> "void":
+        if pRspInfo is not None and pRspInfo.ErrorID != 0:
+            print(f'OnRspQryInvestorPositionDetail failed: {pRspInfo.ErrorMsg}')
+            exit(-1)
+
+        if pInvestorPositionDetail:
+            position_detail = convert_field(pInvestorPositionDetail, InvestorPositionDetailField)
+            self.PositionDetails.append(position_detail)
+        if bIsLast is True:
+            semaphore.release()
+
     def OnRspQryOrder(self, pOrder, pRspInfo, nRequestID, bIsLast):
         if pRspInfo is not None and pRspInfo.ErrorID != 0:
             print(f'OnRspQryOrder failed: {pRspInfo.ErrorMsg}')
@@ -763,6 +813,12 @@ if __name__ == '__main__':
     print("querying position ...")
     ctpdump.QryPosition()
 
+    # query position details
+    time.sleep(1)
+    semaphore.acquire()
+    print("querying position detail ...")
+    ctpdump.QryPositionDetail()
+
     # query accounts
     time.sleep(1)
     semaphore.acquire()
@@ -818,6 +874,10 @@ if __name__ == '__main__':
 
     print("Positions:")
     jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.Positions])
+    print("[{}]".format(jsonstr))
+
+    print("PositionDetails:")
+    jsonstr = ',\n'.join(json.dumps(item, ensure_ascii=False) for item in [asdict(data) for data in ctpdump.PositionDetails])
     print("[{}]".format(jsonstr))
 
     print("Orders:")
