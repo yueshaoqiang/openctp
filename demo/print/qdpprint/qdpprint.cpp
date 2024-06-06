@@ -429,10 +429,31 @@ int main(int argc, char* argv[])
 	// 等待登录完成
 	_semaphore.wait();
 
+	// 查询投资者
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("查询投资者 ...\n");
+	CQdpFtdcQryUserInvestorField QryUserInvestor = { 0 };
+	Spi.m_pUserApi->ReqQryUserInvestor(&QryUserInvestor, 0);
+	_semaphore.wait();
+
 	// 查询交易所
 	printf("查询交易所 ...\n");
 	CQdpFtdcQryExchangeField QryExchange = { 0 };
 	Spi.m_pUserApi->ReqQryExchange(&QryExchange, 0);
+	_semaphore.wait();
+
+	// 查询合约
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("查询合约 ...\n");
+	CQdpFtdcQryInstrumentField QryInstrument = { 0 };
+	Spi.m_pUserApi->ReqQryInstrument(&QryInstrument, 0);
+	_semaphore.wait();
+
+	// 查询行情
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("查询行情 ...\n");
+	CQdpFtdcQryMarketDataField QryMarketData = { 0 };
+	Spi.m_pUserApi->ReqQryMarketData(&QryMarketData, 0);
 	_semaphore.wait();
 
 	// 查询投资者手续费率
@@ -451,20 +472,6 @@ int main(int argc, char* argv[])
 	strncpy(QryInvestorMargin.BrokerID, broker.c_str(), sizeof(QryInvestorMargin.BrokerID) - 1);
 	strncpy(QryInvestorMargin.InvestorID, user.c_str(), sizeof(QryInvestorMargin.InvestorID) - 1);
 	Spi.m_pUserApi->ReqQryInvestorMargin(&QryInvestorMargin, 0);
-	_semaphore.wait();
-
-	// 查询合约
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	printf("查询合约 ...\n");
-	CQdpFtdcQryInstrumentField QryInstrument = { 0 };
-	Spi.m_pUserApi->ReqQryInstrument(&QryInstrument, 0);
-	_semaphore.wait();
-
-	// 查询行情
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	printf("查询行情 ...\n");
-	CQdpFtdcQryMarketDataField QryMarketData = { 0 };
-	Spi.m_pUserApi->ReqQryMarketData(&QryMarketData, 0);
 	_semaphore.wait();
 
 	// 查询订单
