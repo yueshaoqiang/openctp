@@ -300,23 +300,22 @@ class Export(object):
     def query_rate(self):
         print("3. 查询交易费率")
         for inst_id, ins in self._d_instrument.items():
-            if ins["ProductID"] not in self._d_rate:
-                req = tdapi.CThostFtdcQryInstrumentCommissionRateField()
-                req.BrokerID = broker_id
-                req.InvestorID = user
-                req.InstrumentID = inst_id
-                while True:
-                    ret = self._spi.api.ReqQryInstrumentCommissionRate(req, 0)
-                    if ret == 0:
-                        time.sleep(0.2)
-                        break
-                    time.sleep(0.1)
-                    print("sleep 0.1")
+            req = tdapi.CThostFtdcQryInstrumentCommissionRateField()
+            req.BrokerID = broker_id
+            req.InvestorID = user
+            req.InstrumentID = inst_id
+            while True:
+                ret = self._spi.api.ReqQryInstrumentCommissionRate(req, 0)
+                if ret == 0:
+                    time.sleep(0.2)
+                    break
+                time.sleep(0.1)
+                print("sleep 0.1")
 
-                rate = Q_RATE.get()
-                if rate is None:
-                    continue
-                self._d_rate[rate["InstrumentID"]] = rate
+            rate = Q_RATE.get()
+            if rate is None:
+                continue
+            self._d_rate[rate["InstrumentID"]] = rate
 
             req = tdapi.CThostFtdcQryInstrumentMarginRateField()
             req.BrokerID = broker_id
