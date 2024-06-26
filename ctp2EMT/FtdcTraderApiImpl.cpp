@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <locale>
+#include <codecvt>
 #include "FtdcTraderApiImpl.h"
 #include <boost/algorithm/string.hpp>
 
@@ -16,14 +18,26 @@ CThostFtdcTraderApi *CThostFtdcTraderApi::CreateFtdcTraderApi(const char *pszFlo
 
 const char *CThostFtdcTraderApi::GetApiVersion()
 {
-#ifdef V6_6_1_P1
-	return "V6_6_1_P1";
+#ifdef V6_7_2
+	return "openctp-emt v6.7.2";
+#elif V6_7_1
+	return "openctp-emt v6.7.1";
+#elif V6_7_0
+	return "openctp-emt v6.7.0";
+#elif V6_6_9
+	return "openctp-emt v6.6.9";
+#elif V6_6_7
+	return "openctp-emt v6.6.7";
+#elif V6_6_5_P1
+	return "openctp-emt v6.6.5_P1";
+#elif V6_6_1_P1
+	return "openctp-emt v6.6.1_P1";
 #elif V6_5_1
-	return "6.5.1";
+	return "openctp-emt v6.5.1";
 #elif V6_3_19
-	return "6.3.19_P1";
+	return "openctp-emt v6.3.19_P1";
 #else
-	return "6.3.15";
+	return "openctp-emt v6.3.15";
 #endif
 }
 
@@ -45,11 +59,20 @@ CFtdcTraderApiImpl::CFtdcTraderApiImpl(const char *pszFlowPath)
 	m_emt_sessionid = 0;
 	memset(m_ip, 0x00, sizeof(m_ip));
 	m_port = 0;
-	const char* path = ".";
 	if (pszFlowPath && *pszFlowPath != 0)
-		path = pszFlowPath;
-	m_pUserApi = EMT::API::TraderApi::CreateTraderApi(EMT_CLIENT_ID, path, EMT_LOG_LEVEL_WARNING);
-	m_pUserApi->RegisterSpi(this);
+		strncpy(m_file_path, pszFlowPath, sizeof(m_file_path) - 1);
+	else
+		strncpy(m_file_path, ".", sizeof(m_file_path) - 1);
+}
+
+const std::string CFtdcTraderApiImpl::to_gb2312(const char* info)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t> > conv;
+	std::wstring_convert<std::codecvt_byname<wchar_t, char, mbstate_t>> convert(new std::codecvt_byname<wchar_t, char, mbstate_t>(".936"));
+
+	std::string error_msg = convert.to_bytes(conv.from_bytes(info));
+
+	return std::move(error_msg);
 }
 
 const std::string CFtdcTraderApiImpl::time_to_string(int64_t tm)
@@ -118,11 +141,11 @@ void CFtdcTraderApiImpl::RegisterSpi(CThostFtdcTraderSpi *pSpi)
 
 void CFtdcTraderApiImpl::SubscribePrivateTopic(THOST_TE_RESUME_TYPE nResumeType)
 {
+	m_nResumeType = nResumeType;
 }
 
 void CFtdcTraderApiImpl::SubscribePublicTopic(THOST_TE_RESUME_TYPE nResumeType)
 {
-	m_pUserApi->SubscribePublicTopic((EMT_TE_RESUME_TYPE)nResumeType);
 }
 
 void CFtdcTraderApiImpl::OnTime(const boost::system::error_code& err)
@@ -155,22 +178,26 @@ void CFtdcTraderApiImpl::HandleReqUserLogin(CThostFtdcReqUserLoginField& ReqUser
 {
 	CThostFtdcRspUserLoginField RspUserLogin = { 0 };
 	CThostFtdcRspInfoField RspInfo = { 0 };
-
 	strncpy(RspUserLogin.UserID, ReqUserLogin.UserID, sizeof(RspUserLogin.UserID) - 1);
 	strncpy(RspUserLogin.BrokerID, ReqUserLogin.BrokerID, sizeof(RspUserLogin.BrokerID) - 1);
+
+	m_pUserApi = EMT::API::TraderApi::CreateTraderApi(m_client_id, m_file_path, EMT_LOG_LEVEL_WARNING);
 	if (!m_pUserApi) {
-		// 需要先调用Auth接口
-		RspInfo.ErrorID = 1;
-		strncpy(RspInfo.ErrorMsg, "请先调用ReqAuthenticate接口进行终端验证", sizeof(RspInfo.ErrorMsg) - 1);
+		EMTRI* err = m_pUserApi->GetApiLastError();
+		RspInfo.ErrorID = err->error_id;
+		strncpy(RspInfo.ErrorMsg, to_gb2312(err->error_msg).c_str(), sizeof(RspInfo.ErrorMsg) - 1);
 		m_pSpi->OnRspUserLogin(&RspUserLogin, &RspInfo, nRequestID, true);
 		return;
 	}
+	m_pUserApi->RegisterSpi(this);
+	m_pUserApi->SubscribePublicTopic((EMT_TE_RESUME_TYPE)m_nResumeType);
+
 	if ((m_emt_sessionid = m_pUserApi->Login(m_ip, m_port, ReqUserLogin.UserID, ReqUserLogin.Password, m_protocol, "127.0.0.1")) == 0) {
 		// 登录失败
 		if (m_pSpi) {
 			EMTRI* err = m_pUserApi->GetApiLastError();
 			RspInfo.ErrorID = err->error_id;
-			strncpy(RspInfo.ErrorMsg, err->error_msg, sizeof(RspInfo.ErrorMsg) - 1);
+			strncpy(RspInfo.ErrorMsg, to_gb2312(err->error_msg).c_str(), sizeof(RspInfo.ErrorMsg) - 1);
 			m_pSpi->OnRspUserLogin(&RspUserLogin, &RspInfo, nRequestID, true);
 
 			m_pSpi->OnFrontDisconnected(0);
@@ -729,9 +756,7 @@ int CFtdcTraderApiImpl::ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuth
 }
 void CFtdcTraderApiImpl::HandleReqAuthenticate(CThostFtdcReqAuthenticateField& AuthenticateField, int nRequestID)
 {
-	// 创建Api实例
-	// EMT要求的key填在AuthCode中，由于Key长度超过了33字节，需要越界到AppID字段。
-	m_pUserApi->SetSoftwareKey(AuthenticateField.AuthCode);
+	m_client_id = atol(AuthenticateField.AppID);
 
 	memset(&RspAuthenticateField, 0x00, sizeof(RspAuthenticateField));
 	strncpy(RspAuthenticateField.BrokerID, AuthenticateField.BrokerID, sizeof(RspAuthenticateField.BrokerID) - 1);
@@ -1266,7 +1291,7 @@ int CFtdcTraderApiImpl::ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoFi
 	return 0;
 }
 
-#ifdef V6_5_1
+#if defined(V6_5_1) || defined(V6_6_1_P1) || defined(V6_6_7) || defined(V6_6_9)
 ///查询最大报单数量请求
 int CFtdcTraderApiImpl::ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField* pQryMaxOrderVolume, int nRequestID)
 {
@@ -1304,11 +1329,9 @@ int CFtdcTraderApiImpl::ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParam
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryCombPromotionParam, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
-
 #endif
 
-
-#ifdef V6_6_1_P1
+#if defined(V6_6_1_P1) || defined(V6_6_7) || defined(V6_6_9)
 
 ///投资者风险结算持仓查询
 int CFtdcTraderApiImpl::ReqQryRiskSettleInvstPosition(CThostFtdcQryRiskSettleInvstPositionField* pQryRiskSettleInvstPosition, int nRequestID)
@@ -1324,4 +1347,72 @@ int CFtdcTraderApiImpl::ReqQryRiskSettleProductStatus(CThostFtdcQryRiskSettlePro
 	return 0;
 }
 
+#endif
+
+
+#if defined(V6_6_7) || defined(V6_6_9)
+
+int CFtdcTraderApiImpl::ReqQryTraderOffer(CThostFtdcQryTraderOfferField* pQryTraderOffer, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryTraderOffer, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+#endif
+
+#if defined(V6_6_9)
+///SPBM期货合约参数查询
+int CFtdcTraderApiImpl::ReqQrySPBMFutureParameter(CThostFtdcQrySPBMFutureParameterField* pQrySPBMFutureParameter, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMFutureParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///SPBM期权合约参数查询
+int CFtdcTraderApiImpl::ReqQrySPBMOptionParameter(CThostFtdcQrySPBMOptionParameterField* pQrySPBMOptionParameter, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMOptionParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///SPBM品种内对锁仓折扣参数查询
+int CFtdcTraderApiImpl::ReqQrySPBMIntraParameter(CThostFtdcQrySPBMIntraParameterField* pQrySPBMIntraParameter, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMIntraParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///SPBM跨品种抵扣参数查询
+int CFtdcTraderApiImpl::ReqQrySPBMInterParameter(CThostFtdcQrySPBMInterParameterField* pQrySPBMInterParameter, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMInterParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///SPBM组合保证金套餐查询
+int CFtdcTraderApiImpl::ReqQrySPBMPortfDefinition(CThostFtdcQrySPBMPortfDefinitionField* pQrySPBMPortfDefinition, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMPortfDefinition, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///投资者SPBM套餐选择查询
+int CFtdcTraderApiImpl::ReqQrySPBMInvestorPortfDef(CThostFtdcQrySPBMInvestorPortfDefField* pQrySPBMInvestorPortfDef, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMInvestorPortfDef, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///投资者新型组合保证金系数查询
+int CFtdcTraderApiImpl::ReqQryInvestorPortfMarginRatio(CThostFtdcQryInvestorPortfMarginRatioField* pQryInvestorPortfMarginRatio, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInvestorPortfMarginRatio, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
+
+///投资者产品SPBM明细查询
+int CFtdcTraderApiImpl::ReqQryInvestorProdSPBMDetail(CThostFtdcQryInvestorProdSPBMDetailField* pQryInvestorProdSPBMDetail, int nRequestID)
+{
+	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInvestorProdSPBMDetail, m_pSpi, nullptr, nullptr, nRequestID, true));
+	return 0;
+}
 #endif

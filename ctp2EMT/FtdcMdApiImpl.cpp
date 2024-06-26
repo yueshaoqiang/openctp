@@ -1,11 +1,10 @@
-#include "FtdcMdApiImpl.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "FtdcMdApiImpl.h"
 
-#define EMT_CLIENT_ID 80
-#define EMT_RECONNECT_TIME 3 // seconds
+#define EMQ_RECONNECT_TIME 3 // seconds
 
 CThostFtdcMdApi* CThostFtdcMdApi::CreateFtdcMdApi(const char* pszFlowPath, const bool bIsUsingUdp, const bool bIsMulticast)
 {
@@ -14,14 +13,26 @@ CThostFtdcMdApi* CThostFtdcMdApi::CreateFtdcMdApi(const char* pszFlowPath, const
 
 const char *CThostFtdcMdApi::GetApiVersion()
 {
-#ifdef V6_6_1_P1
-	return "V6_6_1_P1";
+#ifdef V6_7_2
+	return "openctp-emt v6.7.2";
+#elif V6_7_1
+	return "openctp-emt v6.7.1";
+#elif V6_7_0
+	return "openctp-emt v6.7.0";
+#elif V6_6_9
+	return "openctp-emt v6.6.9";
+#elif V6_6_7
+	return "openctp-emt v6.6.7";
+#elif V6_6_5_P1
+	return "openctp-emt v6.6.5_P1";
+#elif V6_6_1_P1
+	return "openctp-emt v6.6.1_P1";
 #elif V6_5_1
-	return "6.5.1";
+	return "openctp-emt v6.5.1";
 #elif V6_3_19
-	return "6.3.19_P1";
+	return "openctp-emt v6.3.19_P1";
 #else
-	return "6.3.15";
+	return "openctp-emt v6.3.15";
 #endif
 }
 
@@ -37,14 +48,14 @@ CFtdcMdApiImpl::CFtdcMdApiImpl(const char* pszFlowPath)
 	const char* path = ".";
 	if (pszFlowPath && *pszFlowPath != 0)
 		path = pszFlowPath;
-	m_pUserApi = EMT::API::QuoteApi::CreateQuoteApi(EMT_CLIENT_ID, path, EMT_LOG_LEVEL_DEBUG);
+	m_pUserApi = QuoteApi::CreateQuoteApi(path, EMQ_LOG_LEVEL::EMQ_LOG_LEVEL_DEBUG, EMQ_LOG_LEVEL::EMQ_LOG_LEVEL_DEBUG);
 	m_pUserApi->RegisterSpi(this);
 }
 
 void CFtdcMdApiImpl::Init()
 {
-	m_pTimer = new boost::asio::deadline_timer(m_io_service, boost::posix_time::seconds(EMT_RECONNECT_TIME)); // ºÁÃë
-	m_pTimer->expires_from_now(boost::posix_time::seconds(EMT_RECONNECT_TIME));
+	m_pTimer = new boost::asio::deadline_timer(m_io_service, boost::posix_time::seconds(EMQ_RECONNECT_TIME)); // ºÁÃë
+	m_pTimer->expires_from_now(boost::posix_time::seconds(EMQ_RECONNECT_TIME));
 	m_pTimer->async_wait(boost::bind(&CFtdcMdApiImpl::OnTime, this, boost::asio::placeholders::error));
 	m_pthread = new std::thread(boost::bind(&boost::asio::io_service::run, &m_io_service));
 	if(m_pSpi)
@@ -61,7 +72,7 @@ void CFtdcMdApiImpl::Release()
 {
 	m_pSpi = NULL;
 	m_io_service.stop();
-	m_pUserApi->Release();
+	m_pUserApi->Logout();
 	m_pUserApi = NULL;
 	delete this;
 }
@@ -79,9 +90,9 @@ void CFtdcMdApiImpl::RegisterFront(char *pszFrontAddress)
 	strncpy(m_ip, pszFrontAddress + 6, strchr(pszFrontAddress + 6, ':') - (pszFrontAddress + 6));
 	m_port = atol(strchr(pszFrontAddress + 6, ':') + 1);
 	if (strncmp(pszFrontAddress, "udp://", 6) == 0)
-		m_protocol = EMT_PROTOCOL_UDP;
+		m_protocol = EMQ_PROTOCOL_UDP;
 	else
-		m_protocol = EMT_PROTOCOL_TCP;
+		m_protocol = EMQ_PROTOCOL_TCP;
 }
 
 void CFtdcMdApiImpl::RegisterNameServer(char *pszNsAddress)
@@ -109,7 +120,7 @@ void CFtdcMdApiImpl::OnTime(const boost::system::error_code& err)
 		m_pSpi->OnFrontConnected();
 	}
 
-	m_pTimer->expires_from_now(boost::posix_time::seconds(EMT_RECONNECT_TIME));
+	m_pTimer->expires_from_now(boost::posix_time::seconds(EMQ_RECONNECT_TIME));
 	m_pTimer->async_wait(boost::bind(&CFtdcMdApiImpl::OnTime, this, boost::asio::placeholders::error));
 }
 
@@ -125,18 +136,17 @@ void CFtdcMdApiImpl::HandleReqUserLogin(CThostFtdcReqUserLoginField& ReqUserLogi
 	CThostFtdcRspUserLoginField RspUserLogin = { 0 };
 	CThostFtdcRspInfoField RspInfo = { 0 };
 
-	if (m_pUserApi->Login(m_ip, m_port, ReqUserLogin.UserID, ReqUserLogin.Password, m_protocol,"127.0.0.1") != 0) {
+	int32_t r = 0;
+	if ((r = m_pUserApi->Login(m_ip, m_port, ReqUserLogin.UserID, ReqUserLogin.Password)) != 0) {
 		// µÇÂ¼Ê§°Ü
 		if (m_pSpi) {
-			EMTRspInfoStruct* err = m_pUserApi->GetApiLastError();
-			RspInfo.ErrorID = err->error_id;
-			strncpy(RspInfo.ErrorMsg, err->error_msg, sizeof(RspInfo.ErrorMsg) - 1);
+			RspInfo.ErrorID = r;
 			m_pSpi->OnRspUserLogin(&RspUserLogin, &RspInfo, nRequestID, true);
 
 			m_pSpi->OnFrontDisconnected(0);
 
 			// ÖØÁ¬¶¨Ê±Æ÷
-			m_pTimer->expires_from_now(boost::posix_time::seconds(EMT_RECONNECT_TIME));
+			m_pTimer->expires_from_now(boost::posix_time::seconds(EMQ_RECONNECT_TIME));
 			m_pTimer->async_wait(boost::bind(&CFtdcMdApiImpl::OnTime, this, boost::asio::placeholders::error));
 		}
 		return;
@@ -165,7 +175,7 @@ void CFtdcMdApiImpl::HandleReqUserLogin(CThostFtdcReqUserLoginField& ReqUserLogi
 		RspUserLogin.SessionID = 0;
 		strncpy(RspUserLogin.BrokerID, ReqUserLogin.BrokerID, sizeof(RspUserLogin.BrokerID) - 1);
 		strncpy(RspUserLogin.MaxOrderRef, "1", sizeof(RspUserLogin.MaxOrderRef) - 1);
-		strncpy(RspUserLogin.SystemName, "EMT", sizeof(RspUserLogin.SystemName) - 1);
+		strncpy(RspUserLogin.SystemName, "EMQ", sizeof(RspUserLogin.SystemName) - 1);
 		m_pSpi->OnRspUserLogin(&RspUserLogin, &RspInfo, nRequestID, true);
 	}
 }
@@ -183,14 +193,14 @@ int CFtdcMdApiImpl::SubscribeMarketData(char* ppInstrumentID[], int nCount)
 			|| memcmp(InstrumentID[0], "51", 2) == 0
 			|| memcmp(InstrumentID[0], "56", 2) == 0
 			|| memcmp(InstrumentID[0], "58", 2) == 0)
-			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SH);
+			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SH);
 		else if (memcmp(InstrumentID[0], "00", 2) == 0
 			|| memcmp(InstrumentID[0], "30", 2) == 0
 			|| memcmp(InstrumentID[0], "159", 3) == 0)
-			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SZ);
+			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SZ);
 		else {
-			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SH);
-			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SZ);
+			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SH);
+			r = m_pUserApi->SubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SZ);
 		}
 	}
 	return r;
@@ -209,14 +219,14 @@ int CFtdcMdApiImpl::UnSubscribeMarketData(char* ppInstrumentID[], int nCount)
 			|| memcmp(InstrumentID[0], "51", 2) == 0
 			|| memcmp(InstrumentID[0], "56", 2) == 0
 			|| memcmp(InstrumentID[0], "58", 2) == 0)
-			r=m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SH);
+			r=m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SH);
 		else if (memcmp(InstrumentID[0], "00", 2) == 0
 			|| memcmp(InstrumentID[0], "30", 2) == 0
 			|| memcmp(InstrumentID[0], "159", 3) == 0)
-			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SZ);
+			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SZ);
 		else {
-			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SH);
-			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMT_EXCHANGE_SZ);
+			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SH);
+			r = m_pUserApi->UnSubscribeMarketData(InstrumentID, 1, EMQ_EXCHANGE_SZ);
 		}
 	}
 	return r;
@@ -335,9 +345,9 @@ void CFtdcMdApiImpl::OnDepthMarketData(EMTMarketDataStruct* market_data, int64_t
 		CThostFtdcDepthMarketDataField  ThostDepthMarketData;
 		memset(&ThostDepthMarketData, 0, sizeof(ThostDepthMarketData));
 		strncpy(ThostDepthMarketData.InstrumentID, market_data->ticker, sizeof(ThostDepthMarketData.InstrumentID) - 1);
-		if (market_data->exchange_id == EMT_EXCHANGE_SH)
+		if (market_data->exchange_id == EMQ_EXCHANGE_SH)
 			strncpy(ThostDepthMarketData.ExchangeID, "SSE", sizeof(ThostDepthMarketData.ExchangeID) - 1);
-		else if (market_data->exchange_id == EMT_EXCHANGE_SZ)
+		else if (market_data->exchange_id == EMQ_EXCHANGE_SZ)
 			strncpy(ThostDepthMarketData.ExchangeID, "SZSE", sizeof(ThostDepthMarketData.ExchangeID) - 1);
 		ThostDepthMarketData.LastPrice = market_data->last_price;
 		ThostDepthMarketData.Volume = market_data->qty;

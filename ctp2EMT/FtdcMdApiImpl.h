@@ -5,13 +5,13 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "emt_quote_api.h"
-#include "ThostFtdcMdApi.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <thread>
+#include "quote_api.h"
+#include "ThostFtdcMdApi.h"
 
-using namespace EMT::API;
+using namespace EMQ::API;
 
 ///API接口实现
 class CFtdcMdApiImpl : public CThostFtdcMdApi, public QuoteSpi
@@ -80,6 +80,10 @@ public:
 	///@remark 
 	virtual int UnSubscribeMarketData(char* ppInstrumentID[], int nCount);
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///暂时不实现的接口
+
 	///注册名字服务器用户信息
 	///@param pFensUserInfo：用户信息。
 	virtual void RegisterFensUserInfo(CThostFtdcFensUserInfoField * pFensUserInfo){return;};
@@ -96,7 +100,7 @@ public:
 	///@remark 
 	virtual int UnSubscribeForQuoteRsp(char* ppInstrumentID[], int nCount) { return -3; }
 
-#if defined(V6_3_19) || defined(V6_5_1) || defined(V6_6_1_P1)
+#if defined(V6_3_19) || defined(V6_5_1) || defined(V6_6_1_P1) || defined(V6_6_7) || defined(V6_6_9)
 	///请求查询组播合约
 	virtual int ReqQryMulticastInstrument(CThostFtdcQryMulticastInstrumentField *pQryMulticastInstrument, int nRequestID) { return -3; }
 #endif
@@ -113,8 +117,8 @@ public:
 	virtual void OnDepthMarketData(EMTMarketDataStruct* market_data, int64_t bid1_qty[], int32_t bid1_count, int32_t max_bid1_count, int64_t ask1_qty[], int32_t ask1_count, int32_t max_ask1_count);
 
 public:
-	EMT::API::QuoteApi*m_pUserApi;
-	CThostFtdcMdSpi *m_pSpi;
+	QuoteApi* m_pUserApi;
+	CThostFtdcMdSpi* m_pSpi;
 	TThostFtdcDateType TradingDay;
 	boost::asio::io_service m_io_service;
 	std::thread* m_pthread;
@@ -122,7 +126,7 @@ public:
 	bool m_logined;
 	char m_ip[16];
 	unsigned short m_port;
-	EMT_PROTOCOL_TYPE m_protocol;
+	EMQ_PROTOCOL_TYPE m_protocol;
 };
 
 

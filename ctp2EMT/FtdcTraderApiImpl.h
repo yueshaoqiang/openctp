@@ -7,6 +7,7 @@
 
 #include "emt_trader_api.h"
 #include "ThostFtdcTraderApi.h"
+#include <string>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <thread>
@@ -19,6 +20,7 @@ public:
 	///构造函数
 	CFtdcTraderApiImpl(const char *pszFlowPath);
 
+	const std::string to_gb2312(const char* info);
 	const std::string time_to_string(int64_t tm);
 	void OnTime(const boost::system::error_code& err);
 
@@ -132,6 +134,10 @@ public:
 	///请求查询产品
 	virtual int ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID);
 
+
+	///-------------------------------------
+	///满足快期需要实现的函数
+	
 	///投资者结算结果确认
 	virtual int ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID);
 
@@ -162,6 +168,9 @@ public:
 	///请求查询交易通知
 	virtual int ReqQryTradingNotice(CThostFtdcQryTradingNoticeField *pQryTradingNotice, int nRequestID);
 
+
+	///-------------------------------------
+	///满足超8需要实现的函数
 	///请求查询客户通知
 	virtual int ReqQryNotice(CThostFtdcQryNoticeField *pQryNotice, int nRequestID);
 	
@@ -169,15 +178,25 @@ public:
 	virtual int ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuthenticateField, int nRequestID);
 	virtual void HandleReqAuthenticate(CThostFtdcReqAuthenticateField& AuthenticateField, int nRequestID);
 
+	///-------------------------------------
+	///满足TB需要实现的函数
 	///请求查询转帐流水
 	virtual int ReqQryTransferSerial(CThostFtdcQryTransferSerialField *pQryTransferSerial, int nRequestID);
 
+	///-------------------------------------
+	///金字塔需要实现的函数
 	///请求查询转帐银行
 	virtual int ReqQryTransferBank(CThostFtdcQryTransferBankField *pQryTransferBank, int nRequestID);
 
 	///请求查询询价
 	virtual int ReqQryForQuote(CThostFtdcQryForQuoteField *pQryForQuote, int nRequestID);
 	
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///暂时不实现的接口
+
 	///注册名字服务器用户信息
 	///@param pFensUserInfo：用户信息。
 	virtual void RegisterFensUserInfo(CThostFtdcFensUserInfoField * pFensUserInfo){return;};
@@ -185,18 +204,32 @@ public:
 	///资金账户口令更新请求
 	virtual int ReqTradingAccountPasswordUpdate(CThostFtdcTradingAccountPasswordUpdateField *pTradingAccountPasswordUpdate, int nRequestID){return -3;};
 
+	///登录请求2
+	virtual int ReqUserLogin2(CThostFtdcReqUserLoginField *pReqUserLogin, int nRequestID) {return -3; };
+
+	///用户口令更新请求2
+	virtual int ReqUserPasswordUpdate2(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID) {return -3; };
+
 	///预埋单录入请求
 	virtual int ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrder, int nRequestID){return -3;};
 
 	///预埋撤单录入请求
 	virtual int ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pParkedOrderAction, int nRequestID){return -3;};
 
+#if defined(V6_5_1) || defined(V6_6_1_P1) || defined(V6_6_7) || defined(V6_6_9)
 	///查询最大报单数量请求
-#ifdef V6_5_1
-	virtual int ReqQueryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField *pQueryMaxOrderVolume, int nRequestID){return -3;};
+	virtual int ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField* pQryMaxOrderVolume, int nRequestID);
+	void HandleReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField& QryMaxOrderVolume, int nRequestID);
+
+	///请求查询分类合约
+	virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID);
+
+	///请求组合优惠比例
+	virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField* pQryCombPromotionParam, int nRequestID);
 #else
-	virtual int ReqQueryMaxOrderVolume(CThostFtdcQueryMaxOrderVolumeField *pQueryMaxOrderVolume, int nRequestID){return -3;};
+	virtual int ReqQueryMaxOrderVolume(CThostFtdcQueryMaxOrderVolumeField* pQueryMaxOrderVolume, int nRequestID) { return -3; };
 #endif
+
 	///请求删除预埋单
 	virtual int ReqRemoveParkedOrder(CThostFtdcRemoveParkedOrderField *pRemoveParkedOrder, int nRequestID){return -3;};
 
@@ -346,19 +379,7 @@ public:
 	///请求查询二级代理商信息
 	virtual int ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoField* pQrySecAgentTradeInfo, int nRequestID);
 
-#ifdef V6_5_1
-	///查询最大报单数量请求
-	virtual int ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField* pQryMaxOrderVolume, int nRequestID);
-	void HandleReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField& QryMaxOrderVolume, int nRequestID);
-
-	///请求查询分类合约
-	virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID);
-
-	///请求组合优惠比例
-	virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField* pQryCombPromotionParam, int nRequestID);
-#endif
-
-#ifdef V6_6_1_P1
+#if defined(V6_6_1_P1) || defined(V6_6_7) || defined(V6_6_9)
 	///投资者风险结算持仓查询
 	virtual int ReqQryRiskSettleInvstPosition(CThostFtdcQryRiskSettleInvstPositionField* pQryRiskSettleInvstPosition, int nRequestID);
 
@@ -366,6 +387,36 @@ public:
 	virtual int ReqQryRiskSettleProductStatus(CThostFtdcQryRiskSettleProductStatusField* pQryRiskSettleProductStatus, int nRequestID);
 #endif
 
+#if defined(V6_6_7) || defined(V6_6_9)
+	///请求查询交易员报盘机
+	virtual int ReqQryTraderOffer(CThostFtdcQryTraderOfferField* pQryTraderOffer, int nRequestID);
+#endif
+
+#if defined(V6_6_9)
+	///SPBM期货合约参数查询
+	virtual int ReqQrySPBMFutureParameter(CThostFtdcQrySPBMFutureParameterField* pQrySPBMFutureParameter, int nRequestID);
+
+	///SPBM期权合约参数查询
+	virtual int ReqQrySPBMOptionParameter(CThostFtdcQrySPBMOptionParameterField* pQrySPBMOptionParameter, int nRequestID);
+
+	///SPBM品种内对锁仓折扣参数查询
+	virtual int ReqQrySPBMIntraParameter(CThostFtdcQrySPBMIntraParameterField* pQrySPBMIntraParameter, int nRequestID);
+
+	///SPBM跨品种抵扣参数查询
+	virtual int ReqQrySPBMInterParameter(CThostFtdcQrySPBMInterParameterField* pQrySPBMInterParameter, int nRequestID);
+
+	///SPBM组合保证金套餐查询
+	virtual int ReqQrySPBMPortfDefinition(CThostFtdcQrySPBMPortfDefinitionField* pQrySPBMPortfDefinition, int nRequestID);
+
+	///投资者SPBM套餐选择查询
+	virtual int ReqQrySPBMInvestorPortfDef(CThostFtdcQrySPBMInvestorPortfDefField* pQrySPBMInvestorPortfDef, int nRequestID);
+
+	///投资者新型组合保证金系数查询
+	virtual int ReqQryInvestorPortfMarginRatio(CThostFtdcQryInvestorPortfMarginRatioField* pQryInvestorPortfMarginRatio, int nRequestID);
+
+	///投资者产品SPBM明细查询
+	virtual int ReqQryInvestorProdSPBMDetail(CThostFtdcQryInvestorProdSPBMDetailField* pQryInvestorProdSPBMDetail, int nRequestID);
+#endif
 private:
 	virtual void OnDisconnected(uint64_t session_id, int reason);
 
@@ -398,6 +449,7 @@ private:
 	TThostFtdcBrokerIDType m_BrokerID;
 	uint64_t m_emt_sessionid;
 	EMT_PROTOCOL_TYPE m_protocol;
+	THOST_TE_RESUME_TYPE m_nResumeType;
 
 	TThostFtdcFrontIDType m_FrontID;
 	TThostFtdcSessionIDType m_SessionID;
@@ -417,6 +469,8 @@ private:
 	bool m_logined;
 	char m_ip[16];
 	unsigned short m_port;
+	uint8_t m_client_id;
+	char m_file_path[256];
 	std::map<uint64_t, uint64_t> m_mOrderRefToXtpID; // 此OrderRef为虚拟ID，为适配CTP机制而设
 	std::map<uint64_t, uint64_t> m_mXtpIDToOrderRef;
 	uint32_t m_ctp_sessionid; // 虚拟ID，为适配CTP机制而设
