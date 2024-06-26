@@ -17,7 +17,7 @@ openctp的动态库（dll、so等文件）只是对东方财富接口的简单�
 
 ## 编译：
 
-使用cmake管理跨平台编译，最外层目录下的cmake文件是个总体编译工程，各版本号目录下的为各版本的工程，均可编译。
+如果不想使用[openctp官网](http://www.openctp.cn/)编译好的文件，也可以自己编译，EMT柜台CTPAPI接口使用cmake管理跨平台编译，最外层目录下的cmake文件是个总体编译工程，各版本号目录下的为各版本的工程，均可编译。
 
 例：（ctp2EMT目录下总体编译）
 ```shell
@@ -29,6 +29,15 @@ cmake --build . --config Release
 
 ## 客户端：
 openctp开发的交易客户端MiniTrader即是通过CTPAPI兼容接口的方式支持EMT柜台的，可在[openctp官网](http://www.openctp.cn/)下载使用。
+<img width="1123" alt="c53a382569d0b08d612300ce45d9b33" src="https://github.com/openctp/openctp/assets/83346523/e2b24920-8b7e-4485-a168-3d5200d7cdef">
+
+东财EMT柜台CTPAPI相关文章：
+- [开放东方财富EMT柜台交易及行情CTPAPI源码](https://mp.weixin.qq.com/s?__biz=Mzk0ODI0NDE2Ng==&mid=2247485041&idx=1&sn=190e03398e60a6dc5d6056593aa701d6&chksm=c36bddd8f41c54ce2455e944b8cf9b0e44266f28b79f9591f48cc7ce8b2d8cd3260d77a0aedb&token=494867293&lang=zh_CN#rd)
+- [如何使用CTP开放平台提供的各项能力](https://mp.weixin.qq.com/s?__biz=Mzk0ODI0NDE2Ng==&mid=2247484094&idx=1&sn=97bd791622333886260bf767bea40db1&chksm=c36bd917f41c50016b676b5f5b11f899aea889cd9b10e6724c7fee0ad443f31351f87ff5a4d2&token=1790747698&lang=zh_CN#rd)
+- [CTP接口开发“葵花宝典”](https://zhuanlan.zhihu.com/p/397359483)
+- [CTP接口支持pip install](https://zhuanlan.zhihu.com/p/622959788)
+- [CTP接口量化交易资料汇总](https://zhuanlan.zhihu.com/p/607325008)
+- [单品爆款MiniTrader发布](https://mp.weixin.qq.com/s?__biz=Mzk0ODI0NDE2Ng==&mid=2247485197&idx=1&sn=a57ec6389f785473a80954bfaf8d4eb1&chksm=c36bdca4f41c55b265bfa993433eae50a32a8e0219fdd0b2952573744adbd45863eaabea0195&token=494867293&lang=zh_CN#rd)
 
 **<u>注意：由于EMT的原生交易API不提供查询合约接口，且因接口设计限制不便在交易接口中整合行情接口，因此提供了一个合约字典文件，在仿CTPAPI的合约查询中，会通过读取该文件来响应合约查询应答，该文件（dict.csv）需要放在程序的运行目录下，基本与dll放在同一目录即可。</u>**
 
