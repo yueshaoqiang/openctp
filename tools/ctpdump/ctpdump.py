@@ -506,14 +506,6 @@ class CTPDump(tdapi.CThostFtdcTraderSpi):
         req = tdapi.CThostFtdcQryDepthMarketDataField()
         self.api.ReqQryDepthMarketData(req, 0)
 
-    def QryDepthMarketData(self):
-        req = tdapi.CThostFtdcQryDepthMarketDataField()
-        self.api.ReqQryDepthMarketData(req, 0)
-
-    def QryDepthMarketData(self):
-        req = tdapi.CThostFtdcQryDepthMarketDataField()
-        self.api.ReqQryDepthMarketData(req, 0)
-
     def QryCommissionRate(self):
         req = tdapi.CThostFtdcQryInstrumentCommissionRateField()
         req.BrokerID = self.broker

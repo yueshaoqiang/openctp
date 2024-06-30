@@ -145,11 +145,14 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         req.CombOffsetFlag = Offset
         req.CombHedgeFlag = tdapi.THOST_FTDC_HF_Speculation
         req.OrderPriceType = PriceType
-        req.LimitPrice = float(Price)
-        req.VolumeTotalOriginal = int(Volume)
+        if Price != "":
+            req.LimitPrice = float(Price)
+        if Volume != "":
+            req.VolumeTotalOriginal = int(Volume)
         req.TimeCondition = TimeCondition
         req.VolumeCondition = VolumeCondition
-        req.MinVolume = int(MinVolume)
+        if MinVolume != "":
+            req.MinVolume = int(MinVolume)
         req.OrderRef = str(self.OrderRef)
         self.OrderRef = self.OrderRef + 1
         req.ForceCloseReason = tdapi.THOST_FTDC_FCC_NotForceClose
@@ -164,8 +167,10 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         req.ExchangeID = ExchangeID
         req.InstrumentID = InstrumentID
         req.OrderSysID = OrderSysID
-        req.FrontID = int(FrontID)
-        req.SessionID = int(SessionID)
+        if FrontID != "":
+            req.FrontID = int(FrontID)
+        if SessionID != "":
+            req.SessionID = int(SessionID)
         req.OrderRef = OrderRef
         req.ActionFlag = tdapi.THOST_FTDC_AF_Delete
         self.api.ReqOrderAction(req, 0)
@@ -899,7 +904,7 @@ if __name__ == '__main__':
                 PriceType = "2"
             Price = input("Price:")
             Volume = input("Volume:")
-            TimeCondition = input("TimeCondition:1,IOC;3,GFD(Default:3)")
+            TimeCondition = input("TimeCondition:1,IOC立即完成否则撤销;3,GFD当日有效(Default:3)")
             if TimeCondition == "":
                 TimeCondition = "3"
             VolumeCondition = input("VolumeCondition:1,任何数量;2,最小数量;3,全部数量(Default:1)")
