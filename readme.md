@@ -94,7 +94,7 @@ openctp还提供了对几十家主流期货公司CTP柜台实盘环境的监控�
 # **CTPAPI及各柜台CTPAPI兼容接口下载：**
 [CTP、TTS、XTP、TORA等柜台接口下载](http://www.openctp.cn/download.html)
 
-# **已官方支持TTS通道（CTP开放平台）的产品：**
+# **已官方支持openctp-TTS通道的产品：**
 - [TickTrader（openctp研发的交易客户端，支持点价下单，支持全球市场交易，支持CTP、CTP股票期权、TTS、华鑫证券股票与股票期权等柜台）](http://www.openctp.cn/download.html)
 ![image](https://github.com/openctp/openctp/assets/83346523/bc458496-172b-4cb3-bc70-dbde12c0bc17)
 
@@ -115,14 +115,6 @@ openctp还提供了对几十家主流期货公司CTP柜台实盘环境的监控�
 
 - [ctpbee（一个轻量级Python量化交易框架，支持CTP柜台。）](https://github.com/ctpbee/ctpbee)
 <img src="https://github.com/openctp/openctp/assets/83346523/c0448edf-a1fe-4e7a-92c9-5a7652f83f94" alt="WonderTrader" width="700" height="400" />
-
-# **通过自己替换dll可接入TTS通道（CTP开放平台）的产品：**
-- [快期V3（CTP期货交易客户端）](https://zhuanlan.zhihu.com/p/376482285)
-<img src="https://user-images.githubusercontent.com/83346523/138928402-f7e12a28-50d3-457b-9c0a-32b356448913.png" alt="快期V3" width="700" height="400" />
-- [快期V2（CTP期货交易客户端）](https://zhuanlan.zhihu.com/p/432252376)
-<img src="https://user-images.githubusercontent.com/83346523/148678947-b2a7ed9c-f77f-43d6-8e85-74b2c9ca4c44.png" alt="快期V2" width="700" height="400" />
-- [TBTerminalCTP（交易开拓者）](https://zhuanlan.zhihu.com/p/437818698)
-<img src="https://user-images.githubusercontent.com/83346523/149624377-01c97148-9e34-4f2b-8bb3-c43b57340284.png" alt="TBTerminal" width="700" height="400" />
 
 # openctp培训服务
 openctp提供证券期货交易开发方面的技术培训，也提供行业无关的基础技术培训，openctp的培训偏向于就业方向，比如想去私募或者科技公司从事量化或者柜台系统开发的比较适合，当然如果想自己学习一些技术帮助自己更好地做交易也是可以的。openctp的培训是迭代式的，会不断更新，补充更多的内容，同学可在相应课程的群内永久交流。所有课程的每节课在B站上都有试看视频，报培训只需要在openctp的公众号回复培训两个字即可获取联系方式。
