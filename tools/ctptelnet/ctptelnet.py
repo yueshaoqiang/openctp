@@ -346,10 +346,18 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
                 f"InstrumentID={pInstrument.InstrumentID} "
                 f"InstrumentName={pInstrument.InstrumentName} "
                 f"ExchangeID={pInstrument.ExchangeID} "
+                f"ProductClass={pInstrument.ProductClass} "
                 f"ProductID={pInstrument.ProductID} "
                 f"VolumeMultiple={pInstrument.VolumeMultiple} "
                 f"PositionType={pInstrument.PositionType} "
+                f"PositionDateType={pInstrument.PositionDateType} "
                 f"PriceTick={pInstrument.PriceTick} "
+                f"ExpireDate={pInstrument.ExpireDate} "
+                f"UnderlyingInstrID={pInstrument.UnderlyingInstrID} "
+                f"StrikePrice={pInstrument.StrikePrice} "
+                f"OptionsType={pInstrument.OptionsType} "
+                f"MinLimitOrderVolume={pInstrument.MinLimitOrderVolume} "
+                f"MaxLimitOrderVolume={pInstrument.MaxLimitOrderVolume} "
             )
         if bIsLast == True:
             print("Completed.")
@@ -374,6 +382,13 @@ class CTPTelnet(tdapi.CThostFtdcTraderSpi):
         print(f"OnRspQryProduct:{pProduct.ProductID} "
               f"ProductName={pProduct.ProductName} "
               f"ExchangeID={pProduct.ExchangeID} "
+              f"ProductClass={pProduct.ProductClass} "
+              f"VolumeMultiple={pProduct.VolumeMultiple} "
+              f"PriceTick={pProduct.PriceTick} "
+              f"PositionType={pProduct.PositionType} "
+              f"PositionDateType={pProduct.PositionDateType} "
+              f"TradeCurrencyID={pProduct.TradeCurrencyID} "
+              f"UnderlyingMultiple={pProduct.UnderlyingMultiple} "
               )
         if bIsLast == True:
             print("Completed.")

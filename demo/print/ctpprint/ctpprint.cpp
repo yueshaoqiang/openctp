@@ -368,8 +368,8 @@ public:
 		}
 
 		if (pInvestorPosition)
-			printf("OnRspQryInvestorPosition:InstrumentID:%s,PosiDirection:%s,HedgeFlag:%c,Position:%d,YdPosition:%d,TodayPosition:%d,PositionCost:%lf,OpenCost:%lf,ExchangeID:%s\n",
-				pInvestorPosition->InstrumentID, posidirection_to_string(pInvestorPosition->PosiDirection).c_str(), pInvestorPosition->HedgeFlag, pInvestorPosition->Position, pInvestorPosition->YdPosition, pInvestorPosition->TodayPosition, pInvestorPosition->PositionCost, pInvestorPosition->OpenCost, pInvestorPosition->ExchangeID);
+			printf("OnRspQryInvestorPosition:InstrumentID:%s,PosiDirection:%s,HedgeFlag:%c,Position:%d,YdPosition:%d,TodayPosition:%d,PositionCost:%lf,OpenCost:%lf,ExchangeID:%s,PositionDate:%c,TradingDay:%s\n",
+				pInvestorPosition->InstrumentID, posidirection_to_string(pInvestorPosition->PosiDirection).c_str(), pInvestorPosition->HedgeFlag, pInvestorPosition->Position, pInvestorPosition->YdPosition, pInvestorPosition->TodayPosition, pInvestorPosition->PositionCost, pInvestorPosition->OpenCost, pInvestorPosition->ExchangeID, pInvestorPosition->PositionDate, pInvestorPosition->TradingDay);
 
 		if (bIsLast) {
 			_semaphore.signal();
@@ -386,8 +386,8 @@ public:
 		}
 
 		if (pInvestorPositionDetail)
-			printf("OnRspQryInvestorPositionDetail:InstrumentID:%s,Direction:%s,HedgeFlag:%c,Volume:%d,CloseVolume:%d,OpenDate:%s,OpenPrice:%lf,Margin:%lf,ExchangeID:%s\n",
-				pInvestorPositionDetail->InstrumentID, direction_to_string(pInvestorPositionDetail->Direction).c_str(), pInvestorPositionDetail->HedgeFlag, pInvestorPositionDetail->Volume, pInvestorPositionDetail->CloseVolume, pInvestorPositionDetail->OpenDate, pInvestorPositionDetail->OpenPrice, pInvestorPositionDetail->Margin, pInvestorPositionDetail->ExchangeID);
+			printf("OnRspQryInvestorPositionDetail:InstrumentID:%s,Direction:%s,HedgeFlag:%c,Volume:%d,CloseVolume:%d,OpenDate:%s,OpenPrice:%lf,Margin:%lf,ExchangeID:%s,LastSettlementPrice=%lf,SettlementPrice=%lf\n",
+				pInvestorPositionDetail->InstrumentID, direction_to_string(pInvestorPositionDetail->Direction).c_str(), pInvestorPositionDetail->HedgeFlag, pInvestorPositionDetail->Volume, pInvestorPositionDetail->CloseVolume, pInvestorPositionDetail->OpenDate, pInvestorPositionDetail->OpenPrice, pInvestorPositionDetail->Margin, pInvestorPositionDetail->ExchangeID,pInvestorPositionDetail->LastSettlementPrice,pInvestorPositionDetail->SettlementPrice);
 
 		if (bIsLast) {
 			_semaphore.signal();
@@ -586,20 +586,20 @@ int main(int argc, char* argv[])
 	Spi.m_pUserApi->ReqQryTradingAccount(&QryTradingAccount, 0);
 
 	// 如需下单、撤单，放开下面的代码即可
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键下单 ...\n");
-	//getchar();
-	//Spi.OrderInsert("SHFE", "au2206", THOST_FTDC_D_Buy, THOST_FTDC_OF_Open, 380.0, 3);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键下单 ...\n");
+	getchar();
+	Spi.OrderInsert("SHFE", "au2406", THOST_FTDC_D_Buy, THOST_FTDC_OF_Open, 550.0, 3);
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键下单 ...\n");
-	//getchar();
-	//Spi.OrderInsert("CFFEX", "IF2201", THOST_FTDC_D_Sell, THOST_FTDC_OF_Open, 5000.0, 1);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键下单 ...\n");
+	getchar();
+	Spi.OrderInsert("CFFEX", "IF2407", THOST_FTDC_D_Sell, THOST_FTDC_OF_Open, 3500.0, 1);
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键撤单 ...\n");
-	//getchar();
-	//Spi.OrderCancel("CFFEX", "IF2201", "xxx");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键撤单 ...\n");
+	getchar();
+	Spi.OrderCancel("CFFEX", "IF2407", "xxx");
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	printf("按任意键退出 ...\n");

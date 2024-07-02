@@ -70,8 +70,8 @@ public:
 	int Run()
 	{
 		m_pUserApi->RegisterFront((char*)m_host.c_str());
-		m_pUserApi->SubscribePrivateTopic(QDP_TERT_RESTART);
-		m_pUserApi->SubscribePublicTopic(QDP_TERT_RESTART);
+		m_pUserApi->SubscribePrivateTopic(QDP_TERT_QUICK);
+		m_pUserApi->SubscribePublicTopic(QDP_TERT_QUICK);
 		m_pUserApi->Init();
 
 		return 0;
@@ -174,7 +174,7 @@ public:
 			printf("Login failed. %d - %s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
 			return;
 		}
-		printf("Login succeeded.TradingDay:%s,FrontID=%d,SessionID=%d\n", pRspUserLogin->TradingDay, pRspUserLogin->FrontID, pRspUserLogin->SessionID);
+		printf("Login succeeded.TradingDay:%s,FrontID=%d,SessionID=%d,MaxOrderLocalID=%d\n", pRspUserLogin->TradingDay, pRspUserLogin->FrontID, pRspUserLogin->SessionID, pRspUserLogin->MaxOrderLocalID);
 		m_nOrderRef = 1;
 
 		// 订阅推送信息（委托回报、市场状态通知等）
@@ -196,7 +196,7 @@ public:
 			printf("OnRspOrderInsert. %d - %s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
 			return;
 		}
-		printf("OnRspOrderInsert:InstrumentID:%s,ExchangeID:%s,Volume:%d,LimitPrice:%lf,UserOrderLocalID:%d\n", pInputOrder->InstrumentID, pInputOrder->ExchangeID, pInputOrder->Volume, pInputOrder->LimitPrice, pInputOrder->UserOrderLocalID);
+		printf("OnRspOrderInsert:InstrumentID:%s,ExchangeID:%s,Direction:%s,OffsetFlag:%c,Volume:%d,LimitPrice:%lf,UserOrderLocalID:%d,OrderSysID=%s,UserCustom=%s\n", pInputOrder->InstrumentID, pInputOrder->ExchangeID, direction_to_string(pInputOrder->Direction).c_str(), pInputOrder->OffsetFlag, pInputOrder->Volume, pInputOrder->LimitPrice, pInputOrder->UserOrderLocalID, pInputOrder->OrderSysID, pInputOrder->UserCustom);
 	}
 
 	// 撤单应答
@@ -206,7 +206,7 @@ public:
 			printf("OnRspOrderAction. %d - %s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
 			return;
 		}
-		printf("OnRspOrderAction:InstrumentID:%s,ExchangeID:%s,OrderSysID:%s,FrontID:%d,SessionID:%d,OrderRef:%d\n", pOrderAction->InstrumentID, pOrderAction->ExchangeID, pOrderAction->OrderSysID, pOrderAction->FrontID, pOrderAction->SessionID, pOrderAction->UserOrderLocalID);
+		printf("OnRspOrderAction:InstrumentID:%s,ExchangeID:%s,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,UserOrderActionLocalID=%d\n", pOrderAction->InstrumentID, pOrderAction->ExchangeID, pOrderAction->OrderSysID, pOrderAction->FrontID, pOrderAction->SessionID, pOrderAction->UserOrderLocalID, pOrderAction->UserOrderActionLocalID);
 	}
 
 	/*可用投资者账户查询应答*/
@@ -299,8 +299,8 @@ public:
 		}
 
 		if(pOrder)
-			printf("OnRspQryOrder:BrokerID:%s,OrderLocalID:%s,InstrumentID:%s,Direction:%s,Volume:%d,LimitPrice:%lf,VolumeTraded:%d,VolumeRemain:%d,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,OrderStatus:%c,ExchangeID:%s,InsertTime:%s,ClientID:%s,UserCustom:%s\n",
-				pOrder->BrokerID,pOrder->OrderLocalID, pOrder->InstrumentID, direction_to_string(pOrder->Direction).c_str(), pOrder->Volume, pOrder->LimitPrice, pOrder->VolumeTraded, pOrder->VolumeRemain, pOrder->OrderSysID, pOrder->FrontID, pOrder->SessionID, pOrder->UserOrderLocalID, pOrder->OrderStatus, pOrder->ExchangeID, pOrder->InsertTime,pOrder->ClientID,pOrder->UserCustom);
+			printf("OnRspQryOrder:BrokerID:%s,InvestorID:%s,OrderLocalID:%s,InstrumentID:%s,Direction:%s,OffsetFlag:%c,Volume:%d,LimitPrice:%lf,VolumeTraded:%d,VolumeRemain:%d,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,OrderStatus:%c,ExchangeID:%s,InsertTime:%s,ClientID:%s,UserCustom:%s\n",
+				pOrder->BrokerID, pOrder->InvestorID, pOrder->OrderLocalID, pOrder->InstrumentID, direction_to_string(pOrder->Direction).c_str(), pOrder->OffsetFlag, pOrder->Volume, pOrder->LimitPrice, pOrder->VolumeTraded, pOrder->VolumeRemain, pOrder->OrderSysID, pOrder->FrontID, pOrder->SessionID, pOrder->UserOrderLocalID, pOrder->OrderStatus, pOrder->ExchangeID, pOrder->InsertTime,pOrder->ClientID,pOrder->UserCustom);
 
 		if (bIsLast) {
 			_semaphore.signal();
@@ -316,8 +316,8 @@ public:
 		}
 
 		if(pTrade)
-			printf("OnRspQryTrade:BrokerID:%s,InstrumentID:%s,Direction:%s,TradeVolume:%d,TradePrice:%lf,OrderSysID:%s,TradeID:%s,UserOrderLocalID:%d,ExchangeID:%s,TradeTime:%s,ClientID:%s\n",
-				pTrade->BrokerID, pTrade->InstrumentID, direction_to_string(pTrade->Direction).c_str(), pTrade->TradeVolume, pTrade->TradePrice, pTrade->OrderSysID, pTrade->TradeID, pTrade->UserOrderLocalID, pTrade->ExchangeID, pTrade->TradeTime,pTrade->ClientID);
+			printf("OnRspQryTrade:BrokerID:%s,InvestorID:%s,InstrumentID:%s,Direction:%s,OffsetFlag:%c,TradeVolume:%d,TradePrice:%lf,OrderSysID:%s,TradeID:%s,UserOrderLocalID:%d,ExchangeID:%s,TradeTime:%s,ClientID:%s\n",
+				pTrade->BrokerID, pTrade->InvestorID, pTrade->InstrumentID, direction_to_string(pTrade->Direction).c_str(), pTrade->OffsetFlag, pTrade->TradeVolume, pTrade->TradePrice, pTrade->OrderSysID, pTrade->TradeID, pTrade->UserOrderLocalID, pTrade->ExchangeID, pTrade->TradeTime,pTrade->ClientID);
 
 		if (bIsLast) {
 			_semaphore.signal();
@@ -333,8 +333,8 @@ public:
 		}
 
 		if (pInvestorPosition)
-			printf("OnRspQryInvestorPosition:InstrumentID:%s,Direction:%s,HedgeFlag:%c,Position:%d,YdPosition:%d,TodayPosition:%d,PositionCost:%lf,ExchangeID:%s\n",
-				pInvestorPosition->InstrumentID, direction_to_string(pInvestorPosition->Direction).c_str(), pInvestorPosition->HedgeFlag, pInvestorPosition->Position, pInvestorPosition->YdPosition, pInvestorPosition->TodayPosition, pInvestorPosition->PositionCost, pInvestorPosition->ExchangeID);
+			printf("OnRspQryInvestorPosition:InstrumentID:%s,BrokerID:%s,InvestorID:%s,Direction:%s,HedgeFlag:%c,Position:%d,YdPosition:%d,TodayPosition:%d,PositionCost:%lf,ExchangeID:%s\n",
+				pInvestorPosition->InstrumentID, pInvestorPosition->BrokerID, pInvestorPosition->InvestorID, direction_to_string(pInvestorPosition->Direction).c_str(), pInvestorPosition->HedgeFlag, pInvestorPosition->Position, pInvestorPosition->YdPosition, pInvestorPosition->TodayPosition, pInvestorPosition->PositionCost, pInvestorPosition->ExchangeID);
 
 		if (bIsLast) {
 			_semaphore.signal();
@@ -345,8 +345,8 @@ public:
 	void OnRspQryInvestorAccount(CQdpFtdcRspInvestorAccountField* pRspInvestorAccount, CQdpFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 	{
 		if (pRspInvestorAccount)
-			printf("OnRspQryInvestorAccount:AccountID:%s,Balance:%lf,Available:%lf,Margin:%lf,Fee:%lf,FrozenMargin:%lf,FrozenFee:%lf,PreBalance:%lf\n",
-				pRspInvestorAccount->AccountID, pRspInvestorAccount->Balance,pRspInvestorAccount->Available, pRspInvestorAccount->Margin, pRspInvestorAccount->Fee, pRspInvestorAccount->FrozenMargin, pRspInvestorAccount->FrozenFee, pRspInvestorAccount->PreBalance);
+			printf("OnRspQryInvestorAccount:InvestorID:%s,AccountID:%s,Balance:%lf,Available:%lf,Margin:%lf,Fee:%lf,FrozenMargin:%lf,FrozenFee:%lf,PreBalance:%lf\n",
+				pRspInvestorAccount->InvestorID, pRspInvestorAccount->AccountID, pRspInvestorAccount->Balance,pRspInvestorAccount->Available, pRspInvestorAccount->Margin, pRspInvestorAccount->Fee, pRspInvestorAccount->FrozenMargin, pRspInvestorAccount->FrozenFee, pRspInvestorAccount->PreBalance);
 
 		if (bIsLast)
 			printf("Query completed.\n");
@@ -355,15 +355,15 @@ public:
 	// 委托回报
 	void OnRtnOrder(CQdpFtdcOrderField* pOrder)
 	{
-		printf("OnRtnOrder:BrokerID:%s,OrderLocalID:%s,InstrumentID:%s,Direction:%s,Volume:%d,LimitPrice:%lf,VolumeTraded:%d,VolumeRemain:%d,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,OrderStatus:%c,ExchangeID:%s,InsertTime:%s,ClientID:%s,UserCustom:%s\n",
-			pOrder->BrokerID, pOrder->OrderLocalID, pOrder->InstrumentID, direction_to_string(pOrder->Direction).c_str(), pOrder->Volume, pOrder->LimitPrice, pOrder->VolumeTraded, pOrder->VolumeRemain, pOrder->OrderSysID, pOrder->FrontID, pOrder->SessionID, pOrder->UserOrderLocalID, pOrder->OrderStatus, pOrder->ExchangeID, pOrder->InsertTime,pOrder->ClientID,pOrder->UserCustom);
+		printf("OnRtnOrder:BrokerID:%s,InvestorID:%s,OrderLocalID:%s,InstrumentID:%s,Direction:%s,OffsetFlag:%c,Volume:%d,LimitPrice:%lf,VolumeTraded:%d,VolumeRemain:%d,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,OrderStatus:%c,ExchangeID:%s,InsertTime:%s,ClientID:%s,UserCustom:%s\n",
+			pOrder->BrokerID, pOrder->InvestorID, pOrder->OrderLocalID, pOrder->InstrumentID, direction_to_string(pOrder->Direction).c_str(), pOrder->OffsetFlag, pOrder->Volume, pOrder->LimitPrice, pOrder->VolumeTraded, pOrder->VolumeRemain, pOrder->OrderSysID, pOrder->FrontID, pOrder->SessionID, pOrder->UserOrderLocalID, pOrder->OrderStatus, pOrder->ExchangeID, pOrder->InsertTime,pOrder->ClientID,pOrder->UserCustom);
 	}
 
 	// 成交回报
 	void OnRtnTrade(CQdpFtdcTradeField* pTrade)
 	{
-		printf("OnRtnTrade:BrokerID:%s,InstrumentID:%s,Direction:%s,TradeVolume:%d,TradePrice:%lf,OrderSysID:%s,TradeID:%s,UserOrderLocalID:%d,ExchangeID:%s,TradeTime:%s,ClientID:%s\n",
-			pTrade->BrokerID, pTrade->InstrumentID, direction_to_string(pTrade->Direction).c_str(), pTrade->TradeVolume, pTrade->TradePrice, pTrade->OrderSysID, pTrade->TradeID, pTrade->UserOrderLocalID, pTrade->ExchangeID, pTrade->TradeTime, pTrade->ClientID);
+		printf("OnRtnTrade:BrokerID:%s,InvestorID:%s,InstrumentID:%s,Direction:%s,OffsetFlag:%c,TradeVolume:%d,TradePrice:%lf,OrderSysID:%s,TradeID:%s,UserOrderLocalID:%d,ExchangeID:%s,TradeTime:%s,ClientID:%s\n",
+			pTrade->BrokerID, pTrade->InvestorID, pTrade->InstrumentID, direction_to_string(pTrade->Direction).c_str(), pTrade->OffsetFlag, pTrade->TradeVolume, pTrade->TradePrice, pTrade->OrderSysID, pTrade->TradeID, pTrade->UserOrderLocalID, pTrade->ExchangeID, pTrade->TradeTime, pTrade->ClientID);
 	}
 
 	// 报单错误
@@ -373,7 +373,7 @@ public:
 			printf("OnErrRtnOrderInsert. %d - %s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
 
 		if(pInputOrder)
-			printf("OnErrRtnOrderInsert:InstrumentID:%s,ExchangeID:%s,Volume:%d,LimitPrice:%lf,UserOrderLocalID:%d\n", pInputOrder->InstrumentID, pInputOrder->ExchangeID, pInputOrder->Volume, pInputOrder->LimitPrice, pInputOrder->UserOrderLocalID);
+			printf("OnErrRtnOrderInsert:InvestorID:%s,InstrumentID:%s,ExchangeID:%s,Direction:%s,OffsetFlag:%c,Volume:%d,LimitPrice:%lf,UserOrderLocalID:%d,OrderSysID:%s,UserCustom:%s\n", pInputOrder->InvestorID, pInputOrder->InstrumentID, pInputOrder->ExchangeID, direction_to_string(pInputOrder->Direction).c_str(), pInputOrder->OffsetFlag, pInputOrder->Volume, pInputOrder->LimitPrice, pInputOrder->UserOrderLocalID, pInputOrder->OrderSysID, pInputOrder->UserCustom);
 	}
 
 	// 撤单错误回报
@@ -383,7 +383,7 @@ public:
 			printf("OnErrRtnOrderAction. %d - %s\n", pRspInfo->ErrorID, pRspInfo->ErrorMsg);
 
 		if (pOrderAction)
-			printf("OnErrRtnOrderAction:InstrumentID:%s,ExchangeID:%s,OrderSysID:%s,FrontID:%d,SessionID:%d,OrderRef:%d\n", pOrderAction->InstrumentID, pOrderAction->ExchangeID, pOrderAction->OrderSysID, pOrderAction->FrontID, pOrderAction->SessionID, pOrderAction->UserOrderLocalID);
+			printf("OnErrRtnOrderAction:InvestorID:%s,InstrumentID:%s,ExchangeID:%s,OrderSysID:%s,FrontID:%d,SessionID:%d,UserOrderLocalID:%d,UserOrderActionLocalID=%d\n",pOrderAction->InvestorID, pOrderAction->InstrumentID, pOrderAction->ExchangeID, pOrderAction->OrderSysID, pOrderAction->FrontID, pOrderAction->SessionID, pOrderAction->UserOrderLocalID, pOrderAction->UserOrderActionLocalID);
 	}
 
 	void OnRtnInstrumentStatus(CQdpFtdcInstrumentStatusField* pInstrumentStatus)
@@ -433,6 +433,7 @@ int main(int argc, char* argv[])
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	printf("查询投资者 ...\n");
 	CQdpFtdcQryUserInvestorField QryUserInvestor = { 0 };
+	strncpy(QryUserInvestor.BrokerID, broker.c_str(), sizeof(QryUserInvestor.BrokerID) - 1);
 	Spi.m_pUserApi->ReqQryUserInvestor(&QryUserInvestor, 0);
 	_semaphore.wait();
 
@@ -511,20 +512,20 @@ int main(int argc, char* argv[])
 
 	// 如需下单、撤单，放开下面的代码即可
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键下单 ...\n");
-	//getchar();
-	//Spi.OrderInsert("DCE", "c2209", QDP_FTDC_D_Buy, QDP_FTDC_OF_Open, 2400.0, 1);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键下单 ...\n");
+	getchar();
+	Spi.OrderInsert("DCE", "c2809", QDP_FTDC_D_Buy, QDP_FTDC_OF_Open, 2400.0, 1);
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键下单 ...\n");
-	//getchar();
-	//Spi.OrderInsert("DCE", "i2207", QDP_FTDC_D_Sell, QDP_FTDC_OF_Open, 580.0, 1);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键下单 ...\n");
+	getchar();
+	Spi.OrderInsert("DCE", "i2207", QDP_FTDC_D_Sell, QDP_FTDC_OF_Open, 580.0, 1);
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	//printf("按任意键撤单 ...\n");
-	//getchar();
-	//Spi.OrderCancel("DCE", "i2207", "100027738");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	printf("按任意键撤单 ...\n");
+	getchar();
+	Spi.OrderCancel("DCE", "i2207", "100027738");
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	printf("按任意键退出 ...\n");
