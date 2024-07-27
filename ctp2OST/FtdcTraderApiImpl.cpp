@@ -3,6 +3,11 @@
 
 #define EXCHANGE_SH "SSE"
 #define EXCHANGE_SZ "SZSE"
+#define EXCHANGE_SHFE "SHFE"
+#define EXCHANGE_CFFEX "CFFEX"
+#define EXCHANGE_DCE "DCE"
+#define EXCHANGE_CZCE "CZCE"
+#define EXCHANGE_INE "INE"
 #define EXCHANGE_HKEX "HKEX"
 #define EXCHANGE_BSE "BSE"
 
@@ -35,7 +40,7 @@ const char *CThostFtdcTraderApi::GetApiVersion()
 
 CFtdcTraderApiImpl::CFtdcTraderApiImpl(const char *pszFlowPath)
 {
-	m_pUserApi = CTORATstpTraderApi::CreateTstpTraderApi(pszFlowPath);
+	m_pUserApi = CUTApi::CreateTstpTraderApi(pszFlowPath);
 	m_pUserApi->RegisterSpi(this);
 
 	m_pSpi = NULL;
@@ -43,19 +48,12 @@ CFtdcTraderApiImpl::CFtdcTraderApiImpl(const char *pszFlowPath)
 	memset(m_BrokerID,0x00,sizeof(m_BrokerID));
 	memset(m_UserID, 0x00, sizeof(m_UserID));
 	memset(m_InvestorID, 0x00, sizeof(m_InvestorID));
-	memset(m_ShareholderID_SSE, 0x00, sizeof(m_ShareholderID_SSE));
-	memset(m_ShareholderID_SZSE, 0x00, sizeof(m_ShareholderID_SZSE));
-	memset(m_ShareholderID_HKEX, 0x00, sizeof(m_ShareholderID_HKEX));
 	ThostRspInfoNotSupported.ErrorID = 99;
 	strncpy(ThostRspInfoNotSupported.ErrorMsg, "Not supported",sizeof(ThostRspInfoNotSupported.ErrorMsg)-1);
 }
 
 void CFtdcTraderApiImpl::Init()
 {
-	m_pTimer = new boost::asio::deadline_timer(m_io_service, boost::posix_time::milliseconds(1000)); // ºÁÃë
-	m_pTimer->expires_from_now(boost::posix_time::seconds(1));
-	m_pTimer->async_wait(boost::bind(&CFtdcTraderApiImpl::OnTime, this, boost::asio::placeholders::error));
-	m_pthread = new std::thread(boost::bind(&boost::asio::io_service::run, &m_io_service));
 	m_pUserApi->Init();
 }
 
@@ -84,27 +82,12 @@ void CFtdcTraderApiImpl::RegisterFront(char *pszFrontAddress)
 
 void CFtdcTraderApiImpl::RegisterFensUserInfo(CThostFtdcFensUserInfoField * pFensUserInfo)
 {
+
 }
 void CFtdcTraderApiImpl::RegisterNameServer(char *pszNsAddress)
 {
 	// tcp://ip:port/EnvID/NodeID
-	std::string NameServer,EnvID,NodeID;
-	std::regex pattern("(.*://.*:.*)/(.*)/(.*)");
-	std::smatch results;
-	std::string target(pszNsAddress);
-	if(std::regex_search(target,results,pattern)){
-		NameServer = results[1];
-		EnvID = results[2];
-		NodeID = results[3];
-
-		CTORATstpFensUserInfoField FensUserInfo;
-
-		memset(&FensUserInfo,0x00,sizeof(FensUserInfo));
-		strncpy(FensUserInfo.FensEnvID,EnvID.c_str(),sizeof(FensUserInfo.FensEnvID)-1);
-		strncpy(FensUserInfo.FensNodeID,NodeID.c_str(),sizeof(FensUserInfo.FensNodeID)-1);
-		m_pUserApi->RegisterFensUserInfo(&FensUserInfo);
-		m_pUserApi->RegisterNameServer((char*)NameServer.c_str());
-	}
+	m_pUserApi->RegisterFront(pszFrontAddress);
 }
 
 void CFtdcTraderApiImpl::RegisterSpi(CThostFtdcTraderSpi *pSpi)
@@ -116,12 +99,12 @@ void CFtdcTraderApiImpl::RegisterSpi(CThostFtdcTraderSpi *pSpi)
 		
 void CFtdcTraderApiImpl::SubscribePrivateTopic(THOST_TE_RESUME_TYPE nResumeType)
 {
-	m_pUserApi->SubscribePrivateTopic((TORA_TE_RESUME_TYPE)nResumeType);
+	m_pUserApi->SubscribePrivateTopic((UT_TE_RESUME_TYPE)nResumeType);
 }
 
 void CFtdcTraderApiImpl::SubscribePublicTopic(THOST_TE_RESUME_TYPE nResumeType)
 {
-	m_pUserApi->SubscribePublicTopic((TORA_TE_RESUME_TYPE)nResumeType);
+	m_pUserApi->SubscribePublicTopic((UT_TE_RESUME_TYPE)nResumeType);
 }
 
 void CFtdcTraderApiImpl::OnTime(const boost::system::error_code& err)
@@ -137,7 +120,7 @@ void CFtdcTraderApiImpl::OnTime(const boost::system::error_code& err)
 	m_pTimer->async_wait(boost::bind(&CFtdcTraderApiImpl::OnTime, this, boost::asio::placeholders::error));
 }
 
-///ÓÃ»§µÇÂ¼ÇëÇó
+///ç”¨æˆ·ç™»å½•è¯·æ±‚
 int CFtdcTraderApiImpl::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLogin, int nRequestID)
 {
 	strncpy(m_BrokerID, pReqUserLogin->BrokerID, sizeof(m_BrokerID) - 1);
@@ -157,7 +140,7 @@ int CFtdcTraderApiImpl::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLogin,
 	return m_pUserApi->ReqUserLogin(&LoginReq, nRequestID);
 }
 
-///ÓÃ»§ÍË³öÇëÇó
+///ç”¨æˆ·é€€å‡ºè¯·æ±‚
 int CFtdcTraderApiImpl::ReqUserLogout(CThostFtdcUserLogoutField *pUserLogout, int nRequestID)
 {
 	CTORATstpUserLogoutField LogoutReq;
@@ -167,7 +150,7 @@ int CFtdcTraderApiImpl::ReqUserLogout(CThostFtdcUserLogoutField *pUserLogout, in
 	return m_pUserApi->ReqUserLogout(&LogoutReq, nRequestID);
 }
 
-///ÓÃ»§ÃÜÂëĞŞ¸ÄÇëÇó
+///ç”¨æˆ·å¯†ç ä¿®æ”¹è¯·æ±‚
 int CFtdcTraderApiImpl::ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID)
 {
 	CTORATstpUserPasswordUpdateField UserPasswordUpdate;
@@ -180,7 +163,7 @@ int CFtdcTraderApiImpl::ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField 
 	return m_pUserApi->ReqUserPasswordUpdate(&UserPasswordUpdate, nRequestID);
 }
 
-///±¨µ¥Â¼ÈëÇëÇó
+///æŠ¥å•å½•å…¥è¯·æ±‚
 int CFtdcTraderApiImpl::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int nRequestID)
 {
 	CTORATstpInputOrderField Req;
@@ -269,7 +252,7 @@ int CFtdcTraderApiImpl::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, i
 	return m_pUserApi->ReqOrderInsert(&Req, nRequestID);
 }
 
-//±¨µ¥Â¼ÈëÓ¦´ğ	
+//æŠ¥å•å½•å…¥åº”ç­”	
 void CFtdcTraderApiImpl::OnRspOrderInsert(CTORATstpInputOrderField* pInputOrderField, CTORATstpRspInfoField* pRspInfo, int nRequestID)
 {
 	if (m_pSpi)
@@ -350,7 +333,7 @@ void CFtdcTraderApiImpl::OnRspOrderInsert(CTORATstpInputOrderField* pInputOrderF
 }
 
 
-///±¨µ¥²Ù×÷ÇëÇó
+///æŠ¥å•æ“ä½œè¯·æ±‚
 int CFtdcTraderApiImpl::ReqOrderAction(CThostFtdcInputOrderActionField *pOrderAction, int nRequestID)
 {
 	CTORATstpInputOrderActionField Req;
@@ -378,7 +361,7 @@ int CFtdcTraderApiImpl::ReqOrderAction(CThostFtdcInputOrderActionField *pOrderAc
 	return m_pUserApi->ReqOrderAction(&Req, nRequestID);
 }
 
-//³·µ¥Ó¦´ğ	
+//æ’¤å•åº”ç­”	
 void CFtdcTraderApiImpl::OnRspOrderAction(CTORATstpInputOrderActionField* pInputOrderActionField, CTORATstpRspInfoField* pRspInfo, int nRequestID)
 {
 	if (m_pSpi)
@@ -423,7 +406,7 @@ void CFtdcTraderApiImpl::OnRspOrderAction(CTORATstpInputOrderActionField* pInput
 }
 
 
-///±¨µ¥²éÑ¯ÇëÇó
+///æŠ¥å•æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nRequestID)
 {
 	CTORATstpQryOrderField Req;
@@ -443,7 +426,7 @@ int CFtdcTraderApiImpl::ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nReq
 	return m_pUserApi->ReqQryOrder(&Req, nRequestID);
 }
 
-///³É½»µ¥²éÑ¯ÇëÇó
+///æˆäº¤å•æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nRequestID)
 {	
 	CTORATstpQryTradeField Req;
@@ -463,7 +446,7 @@ int CFtdcTraderApiImpl::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nReq
 	return m_pUserApi->ReqQryTrade(&Req, nRequestID);
 }
 
-///¿ÉÓÃÍ¶×ÊÕßÕË»§²éÑ¯ÇëÇó
+///å¯ç”¨æŠ•èµ„è€…è´¦æˆ·æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor, int nRequestID)
 {
 	CTORATstpQryInvestorField Req;
@@ -473,7 +456,7 @@ int CFtdcTraderApiImpl::ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor,
 	return m_pUserApi->ReqQryInvestor(&Req, nRequestID);
 }
 
-///Í¶×ÊÕß×Ê½ğÕË»§²éÑ¯ÇëÇó
+///æŠ•èµ„è€…èµ„é‡‘è´¦æˆ·æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID)
 {
 	CTORATstpQryTradingAccountField Req;
@@ -483,7 +466,7 @@ int CFtdcTraderApiImpl::ReqQryTradingAccount(CThostFtdcQryTradingAccountField *p
 	return m_pUserApi->ReqQryTradingAccount(&Req, nRequestID);
 }
 
-//×Ê½ğÕË»§²éÑ¯
+//èµ„é‡‘è´¦æˆ·æŸ¥è¯¢
 void CFtdcTraderApiImpl::OnRspQryTradingAccount(CTORATstpTradingAccountField* pTradingAccount, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -525,7 +508,7 @@ void CFtdcTraderApiImpl::OnRspQryTradingAccount(CTORATstpTradingAccountField* pT
 	}
 }
 
-//²éÑ¯¹É¶«ÕË»§
+//æŸ¥è¯¢è‚¡ä¸œè´¦æˆ·
 void CFtdcTraderApiImpl::OnRspQryShareholderAccount(CTORATstpShareholderAccountField* pShareholderAccount, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (pShareholderAccount && pShareholderAccount->ExchangeID == TORA_TSTP_EXD_SSE)
@@ -539,7 +522,7 @@ void CFtdcTraderApiImpl::OnRspQryShareholderAccount(CTORATstpShareholderAccountF
 }
 
 
-///ºÏÔ¼²éÑ¯ÇëÇó
+///åˆçº¦æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, int nRequestID)
 {
 	CTORATstpQrySecurityField Req;
@@ -564,7 +547,7 @@ int CFtdcTraderApiImpl::ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstr
 	return m_pUserApi->ReqQrySecurity(&Req, nRequestID);
 }
 
-///½»Ò×Ëù²éÑ¯ÇëÇó
+///äº¤æ˜“æ‰€æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID)
 {
 	CTORATstpQryExchangeField Req;
@@ -586,7 +569,7 @@ int CFtdcTraderApiImpl::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange,
 	return m_pUserApi->ReqQryExchange(&Req, nRequestID);
 }
 
-//²éÑ¯½»Ò×Ëù
+//æŸ¥è¯¢äº¤æ˜“æ‰€
 void CFtdcTraderApiImpl::OnRspQryExchange(CTORATstpExchangeField* pExchange, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -621,7 +604,7 @@ void CFtdcTraderApiImpl::OnRspQryExchange(CTORATstpExchangeField* pExchange, CTO
 	}
 }
 
-///Í¶×ÊÕß³Ö²Ö²éÑ¯ÇëÇó
+///æŠ•èµ„è€…æŒä»“æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *pQryInvestorPosition, int nRequestID)
 {
 	CTORATstpQryPositionField Req;
@@ -641,7 +624,7 @@ int CFtdcTraderApiImpl::ReqQryInvestorPosition(CThostFtdcQryInvestorPositionFiel
 	return m_pUserApi->ReqQryPosition(&Req, nRequestID);
 }
 
-///Í¶×ÊÕßÊÖĞø·ÑÂÊ²éÑ¯ÇëÇó
+///æŠ•èµ„è€…æ‰‹ç»­è´¹ç‡æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID)
 {
 	CTORATstpQryInvestorTradingFeeField Req = {0};
@@ -660,7 +643,7 @@ int CFtdcTraderApiImpl::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCo
 	return m_pUserApi->ReqQryInvestorTradingFee(&Req, nRequestID);
 }
 
-///Í¶×ÊÕß±£Ö¤½ğÂÊ²éÑ¯ÇëÇó
+///æŠ•èµ„è€…ä¿è¯é‡‘ç‡æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRateField *pQryInstrumentMarginRate, int nRequestID)
 {
 	static CThostFtdcInstrumentMarginRateField ThostInvestorMargin;
@@ -675,7 +658,7 @@ int CFtdcTraderApiImpl::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMargin
 	return 0;
 }
 
-///Í¶×ÊÕß½áËã½á¹ûÈ·ÈÏ
+///æŠ•èµ„è€…ç»“ç®—ç»“æœç¡®è®¤
 int CFtdcTraderApiImpl::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID)
 {
 	memcpy(&ThostSettlementInfoConfirmField,pSettlementInfoConfirm,sizeof(ThostSettlementInfoConfirmField));
@@ -700,7 +683,7 @@ int CFtdcTraderApiImpl::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField 
 	return 0;
 }
 
-///²úÆ·²éÑ¯
+///äº§å“æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CFtdcTraderApiImpl::HandleReqQryProduct, this, *pQryProduct, nRequestID));
@@ -717,97 +700,97 @@ int CFtdcTraderApiImpl::HandleReqQryProduct(CThostFtdcQryProductField QryProduct
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHStock;
-	strncpy(Products[i].ProductName, "ÉÏº£¹ÉÆ±", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·è‚¡ç¥¨", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_FUND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHFund;
-	strncpy(Products[i].ProductName, "ÉÏº£»ù½ğ", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·åŸºé‡‘", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHBond;
-	strncpy(Products[i].ProductName, "ÉÏº£Õ®È¯", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·å€ºåˆ¸", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHStandard;
-	strncpy(Products[i].ProductName, "ÉÏº£±ê×¼È¯", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·æ ‡å‡†åˆ¸", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHRepurchase;
-	strncpy(Products[i].ProductName, "ÉÏº£ÖÊÑºÊ½»Ø¹º", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·è´¨æŠ¼å¼å›è´­", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZStock;
-	strncpy(Products[i].ProductName, "ÉîÛÚ¹ÉÆ±", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±åœ³è‚¡ç¥¨", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_FUND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZFund;
-	strncpy(Products[i].ProductName, "ÉîÛÚ»ù½ğ", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±åœ³åŸºé‡‘", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZBond;
-	strncpy(Products[i].ProductName, "ÉîÛÚÕ®È¯", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±åœ³å€ºåˆ¸", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZStandard;
-	strncpy(Products[i].ProductName, "ÉîÛÚ±ê×¼È¯", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±åœ³æ ‡å‡†åˆ¸", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_BOND;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZRepurchase;
-	strncpy(Products[i].ProductName, "ÉîÛÚÖÊÑºÊ½»Ø¹º", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±åœ³è´¨æŠ¼å¼å›è´­", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZSEHKMain;
-	strncpy(Products[i].ProductName, "Éî¸ÛÍ¨¸Û¹ÉÖ÷°å", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±æ¸¯é€šæ¸¯è‚¡ä¸»æ¿", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZSEHKGEM;
-	strncpy(Products[i].ProductName, "Éî¸ÛÍ¨¸Û¹É´´Òµ°å", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±æ¸¯é€šæ¸¯è‚¡åˆ›ä¸šæ¿", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZSEHKETS;
-	strncpy(Products[i].ProductName, "Éî¸ÛÍ¨¸Û¹ÉÀ©³äÖ¤È¯", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±æ¸¯é€šæ¸¯è‚¡æ‰©å……è¯åˆ¸", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SZ, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SZSEHKNasdaqAMX;
-	strncpy(Products[i].ProductName, "Éî¸ÛÍ¨¸Û¹ÉNasdaqAMX", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "æ·±æ¸¯é€šæ¸¯è‚¡NasdaqAMX", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_SH, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_SHKC;
-	strncpy(Products[i].ProductName, "ÉÏº£¿Æ´´°å", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "ä¸Šæµ·ç§‘åˆ›æ¿", sizeof(Products[i].ProductName) - 1);
 
 	i++;
 	strncpy(Products[i].ExchangeID, EXCHANGE_BSE, sizeof(Products[i].ExchangeID) - 1);
 	Products[i].ProductClass = OPENCTP_FTDC_PC_EQUITY;
 	Products[i].ProductID[0] = TORA_TSTP_PID_BJStock;
-	strncpy(Products[i].ProductName, "±±¾©¹ÉÆ±", sizeof(Products[i].ProductName) - 1);
+	strncpy(Products[i].ProductName, "åŒ—äº¬è‚¡ç¥¨", sizeof(Products[i].ProductName) - 1);
 
 	for (int i = 0; i < sizeof(Products) / sizeof(CThostFtdcProductField); i++) {
 		Products[i].VolumeMultiple = 10000;
@@ -819,7 +802,6 @@ int CFtdcTraderApiImpl::HandleReqQryProduct(CThostFtdcQryProductField QryProduct
 		
 		m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryProduct, m_pSpi, &Products[i], nullptr, nRequestID, i == sizeof(Products) / sizeof(CThostFtdcProductField) - 1 ? true : false));
 	}
-
 	return 0;
 }
 
@@ -848,21 +830,21 @@ int CFtdcTraderApiImpl::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositi
 	return 0;
 }
 
-///Ñ¯¼ÛÂ¼ÈëÇëÇó
+///è¯¢ä»·å½•å…¥è¯·æ±‚
 int CFtdcTraderApiImpl::ReqForQuoteInsert(CThostFtdcInputForQuoteField *pInputForQuote, int nRequestID)
 {
-	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspForQuoteInsert, m_pSpi, pInputForQuote, &ThostRspInfoNotSupported, nRequestID, true));
+	m_io_service.post(std::bind(&CThostFtdcTraderSpi::OnRspForQuoteInsert, m_pSpi, pInputForQuote, &ThostRspInfoNotSupported, nRequestID, true));
 	return 0;
 }
 
-///±¨¼ÛÂ¼ÈëÇëÇó
+///æŠ¥ä»·å½•å…¥è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQuoteInsert(CThostFtdcInputQuoteField *pInputQuote, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQuoteInsert, m_pSpi, pInputQuote, &ThostRspInfoNotSupported, nRequestID, true));
 	return 0;
 }
 
-///±¨¼Û²Ù×÷ÇëÇó
+///æŠ¥ä»·æ“ä½œè¯·æ±‚
 int CFtdcTraderApiImpl::ReqQuoteAction(CThostFtdcInputQuoteActionField *pInputQuoteAction, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQuoteAction, m_pSpi, pInputQuoteAction, &ThostRspInfoNotSupported, nRequestID, true));
@@ -989,7 +971,7 @@ void CFtdcTraderApiImpl::OnRspError(CUTRspInfoField *pRspInfo, int nRequestID, b
 	}
 }
 
-///ÓÃ»§µÇÂ¼Ó¦´ğ
+///ç”¨æˆ·ç™»å½•åº”ç­”
 void CFtdcTraderApiImpl::OnRspUserLogin(CTORATstpRspUserLoginField *pRspUserLoginField, CTORATstpRspInfoField *pRspInfo, int nRequestID)
 {
 	if(m_pSpi)
@@ -1024,7 +1006,7 @@ void CFtdcTraderApiImpl::OnRspUserLogin(CTORATstpRspUserLoginField *pRspUserLogi
 			strncpy(ThostRspInfo.ErrorMsg,pRspInfo->ErrorMsg,sizeof(ThostRspInfo.ErrorMsg) - 1);
 		}
 
-		// ²éÑ¯¹É¶«ÕËºÅ
+		// æŸ¥è¯¢è‚¡ä¸œè´¦å·
 		CTORATstpQryShareholderAccountField Req;
 		memset(&Req, 0x00, sizeof(Req));
 		m_pUserApi->ReqQryShareholderAccount(&Req, 0);
@@ -1033,7 +1015,7 @@ void CFtdcTraderApiImpl::OnRspUserLogin(CTORATstpRspUserLoginField *pRspUserLogi
 	}
 }
 
-///ÓÃ»§ÍË³öÓ¦´ğ
+///ç”¨æˆ·é€€å‡ºåº”ç­”
 void CFtdcTraderApiImpl::OnRspUserLogout(CTORATstpUserLogoutField *pUserLogoutField, CTORATstpRspInfoField *pRspInfo, int nRequestID)
 {
 	if(m_pSpi)
@@ -1062,7 +1044,7 @@ void CFtdcTraderApiImpl::OnRspUserLogout(CTORATstpUserLogoutField *pUserLogoutFi
 	}
 }
 
-///ÓÃ»§ÃÜÂëĞŞ¸ÄÓ¦´ğ
+///ç”¨æˆ·å¯†ç ä¿®æ”¹åº”ç­”
 void CFtdcTraderApiImpl::OnRspUserPasswordUpdate(CTORATstpUserPasswordUpdateField *pUserPasswordUpdateField, CTORATstpRspInfoField *pRspInfo, int nRequestID)
 {
 	if(m_pSpi != NULL)
@@ -1096,7 +1078,7 @@ void CFtdcTraderApiImpl::OnRspUserPasswordUpdate(CTORATstpUserPasswordUpdateFiel
 
 
 
-///ºÏÔ¼²éÑ¯Ó¦´ğ
+///åˆçº¦æŸ¥è¯¢åº”ç­”
 void CFtdcTraderApiImpl::OnRspQrySecurity(CTORATstpSecurityField *pSecurity, CTORATstpRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 {
 	if(m_pSpi)
@@ -1126,28 +1108,28 @@ void CFtdcTraderApiImpl::OnRspQrySecurity(CTORATstpSecurityField *pSecurity, CTO
 			ThostInstrument.OptionsType = THOST_FTDC_CP_CallOptions;
 			strncpy(ThostInstrument.OpenDate, pSecurity->OpenDate, sizeof(ThostInstrument.OpenDate) - 1);
 			strncpy(ThostInstrument.CreateDate, pSecurity->OpenDate, sizeof(ThostInstrument.CreateDate) - 1);
-			// ÀàĞÍ
+			// ç±»å‹
 			switch (pSecurity->ProductID) {
-			case TORA_TSTP_PID_SHStock: // ÉÏº£¹ÉÆ±
-			case TORA_TSTP_PID_SZStock: // ÉîÛÚ¹ÉÆ±
-			case TORA_TSTP_PID_SZSEHKMain: // Éî¸ÛÍ¨¸Û¹ÉÖ÷°å
-			case TORA_TSTP_PID_SHKC: // ÉÏº£¿Æ´´°å
-			case TORA_TSTP_PID_SZSEHKNasdaqAMX: // Éî¸ÛÍ¨¸Û¹ÉNasdaqAMXÊĞ³¡
-			case TORA_TSTP_PID_SZSEHKGEM: // Éî¸ÛÍ¨¸Û¹É´´Òµ°å
-			case TORA_TSTP_PID_SZSEHKETS: // Éî¸ÛÍ¨¸Û¹ÉÀ©³ä½»Ò×Ö¤È¯
+			case TORA_TSTP_PID_SHStock: // ä¸Šæµ·è‚¡ç¥¨
+			case TORA_TSTP_PID_SZStock: // æ·±åœ³è‚¡ç¥¨
+			case TORA_TSTP_PID_SZSEHKMain: // æ·±æ¸¯é€šæ¸¯è‚¡ä¸»æ¿
+			case TORA_TSTP_PID_SHKC: // ä¸Šæµ·ç§‘åˆ›æ¿
+			case TORA_TSTP_PID_SZSEHKNasdaqAMX: // æ·±æ¸¯é€šæ¸¯è‚¡NasdaqAMXå¸‚åœº
+			case TORA_TSTP_PID_SZSEHKGEM: // æ·±æ¸¯é€šæ¸¯è‚¡åˆ›ä¸šæ¿
+			case TORA_TSTP_PID_SZSEHKETS: // æ·±æ¸¯é€šæ¸¯è‚¡æ‰©å……äº¤æ˜“è¯åˆ¸
 				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_EQUITY;
 				break;
-			case TORA_TSTP_PID_SHBond: // ÉÏº£Õ®È¯
-			case TORA_TSTP_PID_SHStandard: // ÉÏº£±ê×¼È¯
-			case TORA_TSTP_PID_SHRepurchase: // ÉÏº£ÖÊÑºÊ½»Ø¹º
-			case TORA_TSTP_PID_SZBond: // ÉîÛÚÕ®È¯
-			case TORA_TSTP_PID_SZStandard: // ÉîÛÚ±ê×¼È¯
-			case TORA_TSTP_PID_SZRepurchase: // ÉîÛÚÖÊÑºÊ½»Ø¹º
-				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_BOND; // Õ®È¯
+			case TORA_TSTP_PID_SHBond: // ä¸Šæµ·å€ºåˆ¸
+			case TORA_TSTP_PID_SHStandard: // ä¸Šæµ·æ ‡å‡†åˆ¸
+			case TORA_TSTP_PID_SHRepurchase: // ä¸Šæµ·è´¨æŠ¼å¼å›è´­
+			case TORA_TSTP_PID_SZBond: // æ·±åœ³å€ºåˆ¸
+			case TORA_TSTP_PID_SZStandard: // æ·±åœ³æ ‡å‡†åˆ¸
+			case TORA_TSTP_PID_SZRepurchase: // æ·±åœ³è´¨æŠ¼å¼å›è´­
+				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_BOND; // å€ºåˆ¸
 				break;
-			case TORA_TSTP_PID_SHFund: // ÉÏº£»ù½ğ
-			case TORA_TSTP_PID_SZFund: // ÉîÛÚ»ù½ğ
-				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_FUND; // »ù½ğ
+			case TORA_TSTP_PID_SHFund: // ä¸Šæµ·åŸºé‡‘
+			case TORA_TSTP_PID_SZFund: // æ·±åœ³åŸºé‡‘
+				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_FUND; // åŸºé‡‘
 				break;
 			default:
 				ThostInstrument.ProductClass = OPENCTP_FTDC_PC_EQUITY;
@@ -1179,7 +1161,7 @@ void CFtdcTraderApiImpl::OnRspQrySecurity(CTORATstpSecurityField *pSecurity, CTO
 	}
 }
 
-//Í¶×ÊÕß³Ö²Ö²éÑ¯
+//æŠ•èµ„è€…æŒä»“æŸ¥è¯¢
 void CFtdcTraderApiImpl::OnRspQryPosition(CTORATstpPositionField* pPosition, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -1218,8 +1200,8 @@ void CFtdcTraderApiImpl::OnRspQryPosition(CTORATstpPositionField* pPosition, CTO
 			ThostRspInvestorPosition.UseMargin = 0;
 			ThostRspInvestorPosition.FrozenMargin = 0;
 
-			//ÉÏº£ÆÚ»õ½»Ò×ËùµÄ³Ö²ÖÓĞÁ½Ìõ£¬·ÖÎª×ò³Ö²ÖºÍ½ñ³Ö²Ö
-			ThostRspInvestorPosition.PosiDirection = THOST_FTDC_PD_Long; // A¹ÉÖ»ÓĞ¶à²Ö
+			//ä¸Šæµ·æœŸè´§äº¤æ˜“æ‰€çš„æŒä»“æœ‰ä¸¤æ¡ï¼Œåˆ†ä¸ºæ˜¨æŒä»“å’Œä»ŠæŒä»“
+			ThostRspInvestorPosition.PosiDirection = THOST_FTDC_PD_Long; // Aè‚¡åªæœ‰å¤šä»“
 			ThostRspInvestorPosition.Position = pPosition->CurrentPosition;
 			ThostRspInvestorPosition.PositionCost = pPosition->TotalPosCost;
 			ThostRspInvestorPosition.YdPosition = pPosition->PrePosition;
@@ -1240,7 +1222,7 @@ void CFtdcTraderApiImpl::OnRspQryPosition(CTORATstpPositionField* pPosition, CTO
 	}
 }
 
-//±¨µ¥²éÑ¯
+//æŠ¥å•æŸ¥è¯¢
 void CFtdcTraderApiImpl::OnRspQryOrder(CTORATstpOrderField* pOrder, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -1358,7 +1340,7 @@ void CFtdcTraderApiImpl::OnRspQryOrder(CTORATstpOrderField* pOrder, CTORATstpRsp
 }
 
 
-//³É½»²éÑ¯
+//æˆäº¤æŸ¥è¯¢
 void CFtdcTraderApiImpl::OnRspQryTrade(CTORATstpTradeField* pTrade, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -1411,97 +1393,61 @@ void CFtdcTraderApiImpl::OnRspQryTrade(CTORATstpTradeField* pTrade, CTORATstpRsp
 	}
 }
 
-//±¨µ¥»Ø±¨
+//æŠ¥å•å›æŠ¥
 void CFtdcTraderApiImpl::OnRtnOrder(CUTOrderField *pOrder)
 {
 	if (m_pSpi) {
 		CThostFtdcOrderField Order = {};
 		strncpy(Order.BrokerID, m_BrokerID, sizeof(Order.BrokerID) - 1);
 		strncpy(Order.UserID, m_UserID,sizeof(Order.UserID)-1);
-		strncpy(Order.AccountID, pOrder->AccountID, sizeof(Order.AccountID) - 1);
+		strncpy(Order.AccountID, pOrder->BranchID, sizeof(Order.AccountID) - 1);
 		strncpy(Order.InvestorID, pOrder->InvestorID, sizeof(Order.InvestorID) - 1);
-		strncpy(Order.InstrumentID, pOrder->SecurityID, sizeof(Order.InstrumentID) - 1);
-		if (pOrder->ExchangeID == TORA_TSTP_EXD_SSE)
+		strncpy(Order.InstrumentID, pOrder->InstrumentID, sizeof(Order.InstrumentID) - 1);
+
+		switch (pOrder->ExchangeID)
+		{
+		case UT_EXG_SSE:
 			strncpy(Order.ExchangeID, EXCHANGE_SH, sizeof(Order.ExchangeID) - 1);
-		else if (pOrder->ExchangeID == TORA_TSTP_EXD_SZSE)
+			break;
+		case UT_EXG_SZSE:
 			strncpy(Order.ExchangeID, EXCHANGE_SZ, sizeof(Order.ExchangeID) - 1);
-		else if (pOrder->ExchangeID == TORA_TSTP_EXD_BSE)
-			strncpy(Order.ExchangeID, EXCHANGE_BSE, sizeof(Order.ExchangeID) - 1);
-		else if (pOrder->ExchangeID == TORA_TSTP_EXD_HK)
+			break;
+		case UT_EXG_SHFE:
+			strncpy(Order.ExchangeID, EXCHANGE_SHFE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_DCE:
+			strncpy(Order.ExchangeID, EXCHANGE_DCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_CZCE:
+			strncpy(Order.ExchangeID, EXCHANGE_CZCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_INE:
+			strncpy(Order.ExchangeID, EXCHANGE_INE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
 			strncpy(Order.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
+			strncpy(Order.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		default:	// æ— åŒ—äº¤æ‰€ æš‚ä¸å¤„ç†
+			break;
+		}
 		Order.VolumeTotal = pOrder->VolumeTotalOriginal - pOrder->VolumeTraded;
 		Order.VolumeTotalOriginal = pOrder->VolumeTotalOriginal;
 		Order.VolumeTraded = pOrder->VolumeTraded;
 		Order.LimitPrice = pOrder->LimitPrice;
-
-		switch (pOrder->OrderPriceType) {
-		case TORA_TSTP_OPT_AnyPrice:
-			Order.OrderPriceType = THOST_FTDC_OPT_AnyPrice;
-			break;
-		case TORA_TSTP_OPT_LimitPrice:
-			Order.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-			break;
-		case TORA_TSTP_OPT_BestPrice:
-			Order.OrderPriceType = THOST_FTDC_OPT_BestPrice;
-			break;
-		default:
-			break;
-		}
-		
-		Order.Direction = pOrder->Direction == TORA_TSTP_D_Buy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
-		Order.CombOffsetFlag[0] = pOrder->Direction == TORA_TSTP_D_Buy ? THOST_FTDC_OF_Open : THOST_FTDC_OF_Close;
-		Order.CombHedgeFlag[0] = THOST_FTDC_HFEN_Speculation;
+		Order.OrderPriceType = pOrder->OrderPriceType;
+		Order.Direction = pOrder->Direction;
+		Order.CombOffsetFlag[0] = pOrder->OffsetFlag;
+		Order.CombHedgeFlag[0] = pOrder->HedgeFlag;
 		Order.FrontID = pOrder->FrontID;
 		Order.SessionID = pOrder->SessionID;
-		snprintf(Order.OrderRef, sizeof(Order.OrderRef),"%d",pOrder->OrderRef);
+		strncpy(Order.OrderRef,pOrder->OrderRef, sizeof(Order.OrderRef) - 1);
 		strncpy(Order.OrderSysID, pOrder->OrderSysID, sizeof(Order.OrderSysID) - 1);
-		strncpy(Order.InvestUnitID, pOrder->BusinessUnitID, sizeof(Order.InvestUnitID) - 1);
-
-		switch (pOrder->TimeCondition) {
-		case TORA_TSTP_TC_IOC:
-			Order.TimeCondition = THOST_FTDC_TC_IOC;
-			break;
-		case TORA_TSTP_TC_GFS:
-			Order.TimeCondition = THOST_FTDC_TC_GFS;
-			break;
-		case TORA_TSTP_TC_GFD:
-			Order.TimeCondition = THOST_FTDC_TC_GFD;
-			break;
-		case TORA_TSTP_TC_GTD:
-			Order.TimeCondition = THOST_FTDC_TC_GTD;
-			break;
-		case TORA_TSTP_TC_GTC:
-			Order.TimeCondition = THOST_FTDC_TC_GTC;
-			break;
-		case TORA_TSTP_TC_GFA:
-			Order.TimeCondition = THOST_FTDC_TC_GFA;
-			break;
-		default:
-			break;
-		}
-
-		switch (pOrder->OrderStatus)
-		{
-		case TORA_TSTP_OST_Cached:
-		case TORA_TSTP_OST_Unknown:
-		case TORA_TSTP_OST_SendTradeEngine:
-			Order.OrderStatus = THOST_FTDC_OST_Unknown;
-			break;
-		case TORA_TSTP_OST_AllTraded:
-			Order.OrderStatus = THOST_FTDC_OST_AllTraded;
-			break;
-		case TORA_TSTP_OST_PartTraded:
-			Order.OrderStatus = THOST_FTDC_OST_PartTradedQueueing;
-			break;
-		case TORA_TSTP_OST_PartTradeCanceled:
-		case TORA_TSTP_OST_AllCanceled:
-		case TORA_TSTP_OST_Rejected:
-			Order.OrderStatus = THOST_FTDC_OST_Canceled;
-			break;
-		default:
-			Order.OrderStatus = THOST_FTDC_OST_NoTradeQueueing;
-			break;
-		}
+		strncpy(Order.InvestUnitID, pOrder->UserProductInfo, sizeof(Order.InvestUnitID) - 1);
+		Order.TimeCondition = pOrder->TimeCondition;
+		Order.OrderStatus = pOrder->OrderStatus;
 		strncpy(Order.StatusMsg, pOrder->StatusMsg, sizeof(Order.StatusMsg) - 1);
 		Order.OrderSubmitStatus = pOrder->OrderSubmitStatus;
 		strncpy(Order.InsertDate, pOrder->InsertDate, sizeof(Order.InsertDate) - 1);
@@ -1509,53 +1455,133 @@ void CFtdcTraderApiImpl::OnRtnOrder(CUTOrderField *pOrder)
 		strncpy(Order.CancelTime, pOrder->CancelTime, sizeof(Order.CancelTime) - 1);
 		strncpy(Order.ActiveUserID, m_UserID, sizeof(Order.ActiveUserID) - 1);
 		strncpy(Order.OrderLocalID, pOrder->OrderLocalID, sizeof(Order.OrderLocalID) - 1);
-		strncpy(Order.ClientID, pOrder->ShareholderID, sizeof(Order.ClientID) - 1);
+		strncpy(Order.ClientID, pOrder->ClientID, sizeof(Order.ClientID) - 1);
 
 		m_pSpi->OnRtnOrder(&Order);
 	}	
 }
 
-//³É½»»Ø±¨
-void CFtdcTraderApiImpl::OnRtnTrade(CTORATstpTradeField* pTrade)
+//æˆäº¤å›æŠ¥
+void CFtdcTraderApiImpl::OnRtnTrade(CUTTradeField *pTrade)
 {
 	if (m_pSpi)
 	{
-		CThostFtdcTradeField  ThostTrade;
-
-		memset(&ThostTrade, 0, sizeof(ThostTrade));
+		CThostFtdcTradeField  ThostTrade = {};
 		strncpy(ThostTrade.BrokerID, m_BrokerID, sizeof(ThostTrade.BrokerID) - 1);
 		strncpy(ThostTrade.UserID, m_UserID, sizeof(ThostTrade.UserID) - 1);
 		strncpy(ThostTrade.InvestorID, pTrade->InvestorID, sizeof(ThostTrade.InvestorID) - 1);
-		if (pTrade->ExchangeID == TORA_TSTP_EXD_SSE)
-			strncpy(ThostTrade.ExchangeID, EXCHANGE_SH, sizeof(ThostTrade.ExchangeID) - 1);
-		else if (pTrade->ExchangeID == TORA_TSTP_EXD_SZSE)
-			strncpy(ThostTrade.ExchangeID, EXCHANGE_SZ, sizeof(ThostTrade.ExchangeID) - 1);
-		else if (pTrade->ExchangeID == TORA_TSTP_EXD_BSE)
-			strncpy(ThostTrade.ExchangeID, EXCHANGE_BSE, sizeof(ThostTrade.ExchangeID) - 1);
-		else if (pTrade->ExchangeID == TORA_TSTP_EXD_HK)
-			strncpy(ThostTrade.ExchangeID, EXCHANGE_HKEX, sizeof(ThostTrade.ExchangeID) - 1);
-		strncpy(ThostTrade.InstrumentID, pTrade->SecurityID, sizeof(ThostTrade.InstrumentID) - 1);
+		switch (pTrade->ExchangeID)
+		{
+		case UT_EXG_SSE:
+			strncpy(Order.ExchangeID, EXCHANGE_SH, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_SZSE:
+			strncpy(Order.ExchangeID, EXCHANGE_SZ, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_SHFE:
+			strncpy(Order.ExchangeID, EXCHANGE_SHFE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_DCE:
+			strncpy(Order.ExchangeID, EXCHANGE_DCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_CZCE:
+			strncpy(Order.ExchangeID, EXCHANGE_CZCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_INE:
+			strncpy(Order.ExchangeID, EXCHANGE_INE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
+			strncpy(Order.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
+			strncpy(Order.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		default:	// æ— åŒ—äº¤æ‰€ æš‚ä¸å¤„ç†
+			break;
+		}
+			
+		strncpy(ThostTrade.InstrumentID, pTrade->InstrumentID, sizeof(ThostTrade.InstrumentID) - 1);
 		strncpy(ThostTrade.TradeID, pTrade->TradeID, sizeof(ThostTrade.TradeID) - 1);
 		strncpy(ThostTrade.OrderSysID, pTrade->OrderSysID, sizeof(ThostTrade.OrderSysID) - 1);
-		ThostTrade.Direction = pTrade->Direction == TORA_TSTP_D_Buy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
-		ThostTrade.OffsetFlag = pTrade->Direction == TORA_TSTP_D_Buy ? THOST_FTDC_OF_Open : THOST_FTDC_OF_Close;
-		ThostTrade.HedgeFlag = THOST_FTDC_HF_Speculation;
+		ThostTrade.Direction = pTrade->Direction;
+		ThostTrade.OffsetFlag = pTrade->OffsetFlag;
+		ThostTrade.HedgeFlag = pOrder->HedgeFlag;
 		ThostTrade.Price = pTrade->Price;
 		ThostTrade.Volume = pTrade->Volume;
 		snprintf(ThostTrade.OrderRef, sizeof(ThostTrade.OrderRef), "%d", pTrade->OrderRef);
 		strncpy(ThostTrade.OrderLocalID, pTrade->OrderLocalID, sizeof(ThostTrade.OrderLocalID) - 1);
-		strncpy(ThostTrade.TradeDate, pTrade->TradeDate, sizeof(ThostTrade.TradeDate) - 1);
-		strncpy(ThostTrade.TradeTime, pTrade->TradeTime, sizeof(ThostTrade.TradeTime) - 1);
+		snprintf(ThostTrade.TradeDate, sizeof(ThostTrade.TradeDate), "%d",pTrade->TradeDate);
+		snprintf(ThostTrade.TradeTime, sizeof(ThostTrade.TradeTime), "%d",pTrade->TradeTime);
 		strncpy(ThostTrade.TradingDay, TradingDay, sizeof(ThostTrade.TradingDay) - 1);
-		ThostTrade.TradeType = THOST_FTDC_TRDT_Common;
-		strncpy(ThostTrade.ClientID, pTrade->ShareholderID, sizeof(ThostTrade.ClientID) - 1);
-		strncpy(ThostTrade.InvestUnitID, pTrade->BusinessUnitID, sizeof(ThostTrade.InvestUnitID) - 1);
+		ThostTrade.TradeType =  pTrade->TradeType;
+		strncpy(ThostTrade.ClientID, pTrade->ClientID, sizeof(ThostTrade.ClientID) - 1);
+		strncpy(ThostTrade.InvestUnitID, pTrade->UserProductInfo, sizeof(ThostTrade.InvestUnitID) - 1);
 
 		m_pSpi->OnRtnTrade(&ThostTrade);
 	}
 }
 
-//²éÑ¯Í¶×ÊÕß
+//æŠ¥å•æ“ä½œå›æŠ¥
+void CFtdcTraderApiImpl::OnErrRtnOrderAction(CUTOrderActionField *pOrderAction)
+{
+	if (m_pSpi)
+	{
+		CThostFtdcOrderActionField ThostOrderAction = {};
+		strncpy(ThostOrderAction.BrokerID, m_BrokerID, sizeof(ThostOrderAction.BrokerID) - 1);
+		strncpy(ThostOrderAction.UserID, m_UserID, sizeof(ThostOrderAction.UserID) - 1);
+		strncpy(ThostOrderAction.InvestorID, pOrderAction->InvestorID, sizeof(ThostOrderAction.InvestorID) - 1);
+		ThostOrderAction.OrderActionRef = pOrderAction->OrderActionRef;
+		snprintf(ThostOrderAction.OrderRef, sizeof(ThostOrderAction.OrderRef), "%d",pOrderAction->OrderRef);
+		ThostOrderAction.RequestID = 0;
+		ThostOrderAction.FrontID = pOrderAction->FrontID;
+		ThostOrderAction.SessionID = pOrderAction->SessionID;
+		switch (pOrderAction->ExchangeID)
+		{
+		case UT_EXG_SSE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_SH, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_SZSE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_SZ, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_SHFE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_SHFE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_DCE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_DCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_CZCE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_CZCE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_INE:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_INE, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		case UT_EXG_HKEX:
+			strncpy(ThostOrderAction.ExchangeID, EXCHANGE_HKEX, sizeof(Order.ExchangeID) - 1);
+			break;
+		default:	// æ— åŒ—äº¤æ‰€ æš‚ä¸å¤„ç†
+			break;
+		}
+		strncpy(ThostOrderAction.OrderSysID, pOrderAction->OrderSysID, sizeof(ThostOrderAction.OrderSysID) - 1);
+		ThostOrderAction.ActionFlag = pOrderAction->ActionFlag;
+		ThostOrderAction.LimitPrice = pOrderAction->LimitPrice;
+		ThostOrderAction.VolumeChange = pOrderAction->VolumeChange;
+		snprintf(ThostOrderAction.ActionDate, sizeof(ThostOrderAction.ActionDate), "%d",pOrderAction->ActionDate);
+		snprintf(ThostOrderAction.ActionTime, sizeof(ThostOrderAction.ActionTime), "%d",pOrderAction->ActionTime);
+		strncpy(ThostOrderAction.TraderID, pOrderAction->TraderID, sizeof(ThostOrderAction.TraderID) - 1);
+		ThostOrderAction.InstallID = pOrderAction->InstallID;
+		strncpy(ThostOrderAction.OrderLocalID, pOrderAction->OrderLocalID, sizeof(ThostOrderAction.OrderLocalID) - 1);
+		strncpy(ThostOrderAction.ActionLocalID, pOrderAction->ActionLocalID, sizeof(ThostOrderAction.ActionLocalID) - 1);
+		strncpy(ThostOrderAction.ParticipantID, pOrderAction->ParticipantID, sizeof(ThostOrderAction.ParticipantID) - 1);
+		strncpy(ThostOrderAction.ClientID, pOrderAction->ClientID, sizeof(ThostOrderAction.ClientID) - 1);
+		//strncpy(ThostOrderAction.BusinessUnit, pOrderAction->BusinessUnit, sizeof(ThostOrderAction.ParticipantID) - 1);
+		ThostOrderAction.
+		m_pSpi->OnErrRtnOrderAction(CThostFtdcOrderActionField *pOrderAction, CThostFtdcRspInfoField *pRspInfo);
+	}
+}
+//æŸ¥è¯¢æŠ•èµ„è€…
 void CFtdcTraderApiImpl::OnRspQryInvestor(CTORATstpInvestorField* pInvestor, CTORATstpRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
 	if (m_pSpi)
@@ -1635,49 +1661,49 @@ void CFtdcTraderApiImpl::OnRspQryInvestorTradingFee(CTORATstpInvestorTradingFeeF
 		return m_pSpi->OnRspQryInstrumentCommissionRate(pThostInvestorFee, pThostRspInfo, nRequestID, bIsLast);
 	}
 }
-///±¨¼Û²éÑ¯ÇëÇó
+///æŠ¥ä»·æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryQuote(CThostFtdcQryQuoteField* pQryQuote, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryQuote, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///Ö´ĞĞĞû¸æ²éÑ¯ÇëÇó
+///æ‰§è¡Œå®£å‘ŠæŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryExecOrder(CThostFtdcQryExecOrderField* pQryExecOrder, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryExecOrder, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÆÚÈ¨×Ô¶Ô³å²éÑ¯ÇëÇó
+///æœŸæƒè‡ªå¯¹å†²æŸ¥è¯¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryOptionSelfClose(CThostFtdcQryOptionSelfCloseField* pQryOptionSelfClose, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryOptionSelfClose, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÆÚÈ¨×Ô¶Ô³åÂ¼ÈëÇëÇó
+///æœŸæƒè‡ªå¯¹å†²å½•å…¥è¯·æ±‚
 int CFtdcTraderApiImpl::ReqOptionSelfCloseInsert(CThostFtdcInputOptionSelfCloseField* pInputOptionSelfClose, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspOptionSelfCloseInsert, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÆÚÈ¨×Ô¶Ô³å²Ù×÷ÇëÇó
+///æœŸæƒè‡ªå¯¹å†²æ“ä½œè¯·æ±‚
 int CFtdcTraderApiImpl::ReqOptionSelfCloseAction(CThostFtdcInputOptionSelfCloseActionField* pInputOptionSelfCloseAction, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspOptionSelfCloseAction, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///Ö´ĞĞĞû¸æÂ¼ÈëÇëÇó
+///æ‰§è¡Œå®£å‘Šå½•å…¥è¯·æ±‚
 int CFtdcTraderApiImpl::ReqExecOrderInsert(CThostFtdcInputExecOrderField* pInputExecOrder, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspExecOrderInsert, m_pSpi, pInputExecOrder, &ThostRspInfoNotSupported, nRequestID, true));
 	return 0;
 }
 
-///Ö´ĞĞĞû¸æ²Ù×÷ÇëÇó
+///æ‰§è¡Œå®£å‘Šæ“ä½œè¯·æ±‚
 int CFtdcTraderApiImpl::ReqExecOrderAction(CThostFtdcInputExecOrderActionField* pInputExecOrderAction, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspExecOrderAction, m_pSpi, pInputExecOrderAction, &ThostRspInfoNotSupported, nRequestID, true));
@@ -1696,91 +1722,91 @@ int CFtdcTraderApiImpl::ReqQryParkedOrder(CThostFtdcQryParkedOrderField* pQryPar
 	return 0;
 }
 
-///ÇëÇó²éÑ¯Ô¤Âñ³·µ¥
+///è¯·æ±‚æŸ¥è¯¢é¢„åŸ‹æ’¤å•
 int CFtdcTraderApiImpl::ReqQryParkedOrderAction(CThostFtdcQryParkedOrderActionField* pQryParkedOrderAction, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryParkedOrderAction, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯½»Ò×Ëù±£Ö¤½ğÂÊ
+///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“æ‰€ä¿è¯é‡‘ç‡
 int CFtdcTraderApiImpl::ReqQryExchangeMarginRate(CThostFtdcQryExchangeMarginRateField* pQryExchangeMarginRate, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryExchangeMarginRate, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯ÆÚÈ¨½»Ò×³É±¾
+///è¯·æ±‚æŸ¥è¯¢æœŸæƒäº¤æ˜“æˆæœ¬
 int CFtdcTraderApiImpl::ReqQryOptionInstrTradeCost(CThostFtdcQryOptionInstrTradeCostField* pQryOptionInstrTradeCost, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryOptionInstrTradeCost, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯ÆÚÈ¨ºÏÔ¼ÊÖĞø·Ñ
+///è¯·æ±‚æŸ¥è¯¢æœŸæƒåˆçº¦æ‰‹ç»­è´¹
 int CFtdcTraderApiImpl::ReqQryOptionInstrCommRate(CThostFtdcQryOptionInstrCommRateField* pQryOptionInstrCommRate, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryOptionInstrCommRate, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯±¨µ¥ÊÖĞø·Ñ
+///è¯·æ±‚æŸ¥è¯¢æŠ¥å•æ‰‹ç»­è´¹
 int CFtdcTraderApiImpl::ReqQryInstrumentOrderCommRate(CThostFtdcQryInstrumentOrderCommRateField* pQryInstrumentOrderCommRate, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInstrumentOrderCommRate, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯½»Ò×±àÂë
+///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“ç¼–ç 
 int CFtdcTraderApiImpl::ReqQryTradingCode(CThostFtdcQryTradingCodeField* pQryTradingCode, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryTradingCode, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯Í¶×Êµ¥Ôª
+///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„å•å…ƒ
 int CFtdcTraderApiImpl::ReqQryInvestUnit(CThostFtdcQryInvestUnitField* pQryInvestUnit, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInvestUnit, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯×éºÏºÏÔ¼°²È«ÏµÊı
+///è¯·æ±‚æŸ¥è¯¢ç»„åˆåˆçº¦å®‰å…¨ç³»æ•°
 int CFtdcTraderApiImpl::ReqQryCombInstrumentGuard(CThostFtdcQryCombInstrumentGuardField* pQryCombInstrumentGuard, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryCombInstrumentGuard, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯ÉêÇë×éºÏ
+///è¯·æ±‚æŸ¥è¯¢ç”³è¯·ç»„åˆ
 int CFtdcTraderApiImpl::ReqQryCombAction(CThostFtdcQryCombActionField* pQryCombAction, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryCombAction, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯¾­¼Í¹«Ë¾½»Ò×Ëã·¨
+///è¯·æ±‚æŸ¥è¯¢ç»çºªå…¬å¸äº¤æ˜“ç®—æ³•
 int CFtdcTraderApiImpl::ReqQryBrokerTradingAlgos(CThostFtdcQryBrokerTradingAlgosField* pQryBrokerTradingAlgos, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryBrokerTradingAlgos, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó²éÑ¯¼à¿ØÖĞĞÄÓÃ»§ÁîÅÆ
+///è¯·æ±‚æŸ¥è¯¢ç›‘æ§ä¸­å¿ƒç”¨æˆ·ä»¤ç‰Œ
 int CFtdcTraderApiImpl::ReqQueryCFMMCTradingAccountToken(CThostFtdcQueryCFMMCTradingAccountTokenField* pQueryCFMMCTradingAccountToken, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQueryCFMMCTradingAccountToken, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÆÚ»õ·¢Æğ²éÑ¯ÒøĞĞÓà¶îÇëÇó
+///æœŸè´§å‘èµ·æŸ¥è¯¢é“¶è¡Œä½™é¢è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQueryBankAccountMoneyByFuture(CThostFtdcReqQueryAccountField* pReqQueryAccount, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQueryBankAccountMoneyByFuture, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///²éÑ¯ÓÃ»§µ±Ç°Ö§³ÖµÄÈÏÖ¤Ä£Ê½
+///æŸ¥è¯¢ç”¨æˆ·å½“å‰æ”¯æŒçš„è®¤è¯æ¨¡å¼
 int CFtdcTraderApiImpl::ReqUserAuthMethod(CThostFtdcReqUserAuthMethodField* pReqUserAuthMethod, int nRequestID)
 {
 	memset(&UserAuthMethodField, 0x00, sizeof(UserAuthMethodField));
@@ -1790,7 +1816,7 @@ int CFtdcTraderApiImpl::ReqUserAuthMethod(CThostFtdcReqUserAuthMethodField* pReq
 	return 0;
 }
 
-///ÇëÇó²éÑ¯¶ş¼¶´úÀíÉÌĞÅÏ¢
+///è¯·æ±‚æŸ¥è¯¢äºŒçº§ä»£ç†å•†ä¿¡æ¯
 int CFtdcTraderApiImpl::ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoField* pQrySecAgentTradeInfo, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySecAgentTradeInfo, m_pSpi, nullptr, nullptr, nRequestID, true));
@@ -1798,7 +1824,7 @@ int CFtdcTraderApiImpl::ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoFi
 }
 
 #ifdef V6_5_1
-///²éÑ¯×î´ó±¨µ¥ÊıÁ¿ÇëÇó
+///æŸ¥è¯¢æœ€å¤§æŠ¥å•æ•°é‡è¯·æ±‚
 int CFtdcTraderApiImpl::ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField* pQryMaxOrderVolume, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CFtdcTraderApiImpl::HandleReqQryMaxOrderVolume, this, *pQryMaxOrderVolume, nRequestID));
@@ -1822,14 +1848,14 @@ void CFtdcTraderApiImpl::HandleReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeF
 	}
 }
 
-///ÇëÇó²éÑ¯·ÖÀàºÏÔ¼
+///è¯·æ±‚æŸ¥è¯¢åˆ†ç±»åˆçº¦
 int CFtdcTraderApiImpl::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryClassifiedInstrument, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///ÇëÇó×éºÏÓÅ»İ±ÈÀı
+///è¯·æ±‚ç»„åˆä¼˜æƒ æ¯”ä¾‹
 int CFtdcTraderApiImpl::ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField* pQryCombPromotionParam, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryCombPromotionParam, m_pSpi, nullptr, nullptr, nRequestID, true));
@@ -1841,14 +1867,14 @@ int CFtdcTraderApiImpl::ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParam
 
 #ifdef V6_6_1_P1
 
-///Í¶×ÊÕß·çÏÕ½áËã³Ö²Ö²éÑ¯
+///æŠ•èµ„è€…é£é™©ç»“ç®—æŒä»“æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQryRiskSettleInvstPosition(CThostFtdcQryRiskSettleInvstPositionField* pQryRiskSettleInvstPosition, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryRiskSettleInvstPosition, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///·çÏÕ½áËã²úÆ·²éÑ¯
+///é£é™©ç»“ç®—äº§å“æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQryRiskSettleProductStatus(CThostFtdcQryRiskSettleProductStatusField* pQryRiskSettleProductStatus, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryRiskSettleProductStatus, m_pSpi, nullptr, nullptr, nRequestID, true));
@@ -1867,56 +1893,56 @@ int CFtdcTraderApiImpl::ReqQryTraderOffer(CThostFtdcQryTraderOfferField* pQryTra
 #endif
 
 #if defined(V6_6_9)
-///SPBMÆÚ»õºÏÔ¼²ÎÊı²éÑ¯
+///SPBMæœŸè´§åˆçº¦å‚æ•°æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMFutureParameter(CThostFtdcQrySPBMFutureParameterField* pQrySPBMFutureParameter, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMFutureParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///SPBMÆÚÈ¨ºÏÔ¼²ÎÊı²éÑ¯
+///SPBMæœŸæƒåˆçº¦å‚æ•°æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMOptionParameter(CThostFtdcQrySPBMOptionParameterField* pQrySPBMOptionParameter, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMOptionParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///SPBMÆ·ÖÖÄÚ¶ÔËø²ÖÕÛ¿Û²ÎÊı²éÑ¯
+///SPBMå“ç§å†…å¯¹é”ä»“æŠ˜æ‰£å‚æ•°æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMIntraParameter(CThostFtdcQrySPBMIntraParameterField* pQrySPBMIntraParameter, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMIntraParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///SPBM¿çÆ·ÖÖµÖ¿Û²ÎÊı²éÑ¯
+///SPBMè·¨å“ç§æŠµæ‰£å‚æ•°æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMInterParameter(CThostFtdcQrySPBMInterParameterField* pQrySPBMInterParameter, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMInterParameter, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///SPBM×éºÏ±£Ö¤½ğÌ×²Í²éÑ¯
+///SPBMç»„åˆä¿è¯é‡‘å¥—é¤æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMPortfDefinition(CThostFtdcQrySPBMPortfDefinitionField* pQrySPBMPortfDefinition, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMPortfDefinition, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///Í¶×ÊÕßSPBMÌ×²ÍÑ¡Ôñ²éÑ¯
+///æŠ•èµ„è€…SPBMå¥—é¤é€‰æ‹©æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQrySPBMInvestorPortfDef(CThostFtdcQrySPBMInvestorPortfDefField* pQrySPBMInvestorPortfDef, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQrySPBMInvestorPortfDef, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///Í¶×ÊÕßĞÂĞÍ×éºÏ±£Ö¤½ğÏµÊı²éÑ¯
+///æŠ•èµ„è€…æ–°å‹ç»„åˆä¿è¯é‡‘ç³»æ•°æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQryInvestorPortfMarginRatio(CThostFtdcQryInvestorPortfMarginRatioField* pQryInvestorPortfMarginRatio, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInvestorPortfMarginRatio, m_pSpi, nullptr, nullptr, nRequestID, true));
 	return 0;
 }
 
-///Í¶×ÊÕß²úÆ·SPBMÃ÷Ï¸²éÑ¯
+///æŠ•èµ„è€…äº§å“SPBMæ˜ç»†æŸ¥è¯¢
 int CFtdcTraderApiImpl::ReqQryInvestorProdSPBMDetail(CThostFtdcQryInvestorProdSPBMDetailField* pQryInvestorProdSPBMDetail, int nRequestID)
 {
 	m_io_service.post(boost::bind(&CThostFtdcTraderSpi::OnRspQryInvestorProdSPBMDetail, m_pSpi, nullptr, nullptr, nRequestID, true));

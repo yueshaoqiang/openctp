@@ -9,592 +9,592 @@
 #include "ThostFtdcTraderApi.h"
 #include <thread>
 
-///API½Ó¿ÚÊµÏÖ
+///APIæ¥å£å®ç°
 class CFtdcTraderApiImpl : public CThostFtdcTraderApi, public CUTSpi
 {
 public:	
-	///¹¹Ôìº¯Êı
+	///æ„é€ å‡½æ•°
 	CFtdcTraderApiImpl(const char *pszFlowPath="");
 
 	void OnTime(const boost::system::error_code& err);
 
-	///»ñÈ¡APIµÄ°æ±¾ĞÅÏ¢
-	///@retrun »ñÈ¡µ½µÄ°æ±¾ºÅ
+	///è·å–APIçš„ç‰ˆæœ¬ä¿¡æ¯
+	///@retrun è·å–åˆ°çš„ç‰ˆæœ¬å·
 	//const char *GetApiVersion(){return 0;};
 
-	///É¾³ı½Ó¿Ú¶ÔÏó±¾Éí
-	///@remark ²»ÔÙÊ¹ÓÃ±¾½Ó¿Ú¶ÔÏóÊ±,µ÷ÓÃ¸Ãº¯ÊıÉ¾³ı½Ó¿Ú¶ÔÏó
+	///åˆ é™¤æ¥å£å¯¹è±¡æœ¬èº«
+	///@remark ä¸å†ä½¿ç”¨æœ¬æ¥å£å¯¹è±¡æ—¶,è°ƒç”¨è¯¥å‡½æ•°åˆ é™¤æ¥å£å¯¹è±¡
 	virtual void Release();
 	
-	///³õÊ¼»¯
-	///@remark ³õÊ¼»¯ÔËĞĞ»·¾³,Ö»ÓĞµ÷ÓÃºó,½Ó¿Ú²Å¿ªÊ¼¹¤×÷
+	///åˆå§‹åŒ–
+	///@remark åˆå§‹åŒ–è¿è¡Œç¯å¢ƒ,åªæœ‰è°ƒç”¨å,æ¥å£æ‰å¼€å§‹å·¥ä½œ
 	virtual void Init();
 	
-	///µÈ´ı½Ó¿ÚÏß³Ì½áÊøÔËĞĞ
-	///@return Ïß³ÌÍË³ö´úÂë
+	///ç­‰å¾…æ¥å£çº¿ç¨‹ç»“æŸè¿è¡Œ
+	///@return çº¿ç¨‹é€€å‡ºä»£ç 
 	virtual int Join();
 	
-	///»ñÈ¡µ±Ç°½»Ò×ÈÕ
-	///@retrun »ñÈ¡µ½µÄ½»Ò×ÈÕ
-	///@remark Ö»ÓĞµÇÂ¼³É¹¦ºó,²ÅÄÜµÃµ½ÕıÈ·µÄ½»Ò×ÈÕ
+	///è·å–å½“å‰äº¤æ˜“æ—¥
+	///@retrun è·å–åˆ°çš„äº¤æ˜“æ—¥
+	///@remark åªæœ‰ç™»å½•æˆåŠŸå,æ‰èƒ½å¾—åˆ°æ­£ç¡®çš„äº¤æ˜“æ—¥
 	virtual const char *GetTradingDay();
 	
-	///×¢²áÇ°ÖÃ»úÍøÂçµØÖ·
-	///@param pszFrontAddress£ºÇ°ÖÃ»úÍøÂçµØÖ·¡£
-	///@remark ÍøÂçµØÖ·µÄ¸ñÊ½Îª£º¡°protocol://ipaddress:port¡±£¬Èç£º¡±tcp://127.0.0.1:17001¡±¡£ 
-	///@remark ¡°tcp¡±´ú±í´«ÊäĞ­Òé£¬¡°127.0.0.1¡±´ú±í·şÎñÆ÷µØÖ·¡£¡±17001¡±´ú±í·şÎñÆ÷¶Ë¿ÚºÅ¡£
+	///æ³¨å†Œå‰ç½®æœºç½‘ç»œåœ°å€
+	///@param pszFrontAddressï¼šå‰ç½®æœºç½‘ç»œåœ°å€ã€‚
+	///@remark ç½‘ç»œåœ°å€çš„æ ¼å¼ä¸ºï¼šâ€œprotocol://ipaddress:portâ€ï¼Œå¦‚ï¼šâ€tcp://127.0.0.1:17001â€ã€‚ 
+	///@remark â€œtcpâ€ä»£è¡¨ä¼ è¾“åè®®ï¼Œâ€œ127.0.0.1â€ä»£è¡¨æœåŠ¡å™¨åœ°å€ã€‚â€17001â€ä»£è¡¨æœåŠ¡å™¨ç«¯å£å·ã€‚
 	virtual void RegisterFront(char *pszFrontAddress);
 	
-	///×¢²áÃû×Ö·şÎñÆ÷ÍøÂçµØÖ·
-	///@param pszNsAddress£ºÃû×Ö·şÎñÆ÷ÍøÂçµØÖ·¡£
-	///@remark ÍøÂçµØÖ·µÄ¸ñÊ½Îª£º¡°protocol://ipaddress:port¡±£¬Èç£º¡±tcp://127.0.0.1:12001¡±¡£ 
-	///@remark ¡°tcp¡±´ú±í´«ÊäĞ­Òé£¬¡°127.0.0.1¡±´ú±í·şÎñÆ÷µØÖ·¡£¡±12001¡±´ú±í·şÎñÆ÷¶Ë¿ÚºÅ¡£
-	///@remark RegisterFrontÓÅÏÈÓÚRegisterNameServer
+	///æ³¨å†Œåå­—æœåŠ¡å™¨ç½‘ç»œåœ°å€
+	///@param pszNsAddressï¼šåå­—æœåŠ¡å™¨ç½‘ç»œåœ°å€ã€‚
+	///@remark ç½‘ç»œåœ°å€çš„æ ¼å¼ä¸ºï¼šâ€œprotocol://ipaddress:portâ€ï¼Œå¦‚ï¼šâ€tcp://127.0.0.1:12001â€ã€‚ 
+	///@remark â€œtcpâ€ä»£è¡¨ä¼ è¾“åè®®ï¼Œâ€œ127.0.0.1â€ä»£è¡¨æœåŠ¡å™¨åœ°å€ã€‚â€12001â€ä»£è¡¨æœåŠ¡å™¨ç«¯å£å·ã€‚
+	///@remark RegisterFrontä¼˜å…ˆäºRegisterNameServer
 	virtual void RegisterNameServer(char *pszNsAddress);
 
-	///×¢²áÃû×Ö·şÎñÆ÷ÓÃ»§ĞÅÏ¢
-	///@param pFensUserInfo£ºÓÃ»§ĞÅÏ¢¡£
+	///æ³¨å†Œåå­—æœåŠ¡å™¨ç”¨æˆ·ä¿¡æ¯
+	///@param pFensUserInfoï¼šç”¨æˆ·ä¿¡æ¯ã€‚
 	virtual void RegisterFensUserInfo(CThostFtdcFensUserInfoField * pFensUserInfo);
 
-	///×¢²á»Øµ÷½Ó¿Ú
-	///@param pSpi ÅÉÉú×Ô»Øµ÷½Ó¿ÚÀàµÄÊµÀı
+	///æ³¨å†Œå›è°ƒæ¥å£
+	///@param pSpi æ´¾ç”Ÿè‡ªå›è°ƒæ¥å£ç±»çš„å®ä¾‹
 	virtual void RegisterSpi(CThostFtdcTraderSpi *pSpi);
 
-	///¶©ÔÄË½ÓĞÁ÷¡£
-	///@param nResumeType Ë½ÓĞÁ÷ÖØ´«·½Ê½  
-	///        THOST_TERT_RESTART:´Ó±¾½»Ò×ÈÕ¿ªÊ¼ÖØ´«
-	///        THOST_TERT_RESUME:´ÓÉÏ´ÎÊÕµ½µÄĞø´«
-	///        THOST_TERT_QUICK:Ö»´«ËÍµÇÂ¼ºóË½ÓĞÁ÷µÄÄÚÈİ
-	///@remark ¸Ã·½·¨ÒªÔÚInit·½·¨Ç°µ÷ÓÃ¡£Èô²»µ÷ÓÃÔò²»»áÊÕµ½Ë½ÓĞÁ÷µÄÊı¾İ¡£
+	///è®¢é˜…ç§æœ‰æµã€‚
+	///@param nResumeType ç§æœ‰æµé‡ä¼ æ–¹å¼  
+	///        THOST_TERT_RESTART:ä»æœ¬äº¤æ˜“æ—¥å¼€å§‹é‡ä¼ 
+	///        THOST_TERT_RESUME:ä»ä¸Šæ¬¡æ”¶åˆ°çš„ç»­ä¼ 
+	///        THOST_TERT_QUICK:åªä¼ é€ç™»å½•åç§æœ‰æµçš„å†…å®¹
+	///@remark è¯¥æ–¹æ³•è¦åœ¨Initæ–¹æ³•å‰è°ƒç”¨ã€‚è‹¥ä¸è°ƒç”¨åˆ™ä¸ä¼šæ”¶åˆ°ç§æœ‰æµçš„æ•°æ®ã€‚
 	virtual void SubscribePrivateTopic(THOST_TE_RESUME_TYPE nResumeType);
 	
-	///¶©ÔÄ¹«¹²Á÷¡£
-	///@param nResumeType ¹«¹²Á÷ÖØ´«·½Ê½  
-	///        THOST_TERT_RESTART:´Ó±¾½»Ò×ÈÕ¿ªÊ¼ÖØ´«
-	///        THOST_TERT_RESUME:´ÓÉÏ´ÎÊÕµ½µÄĞø´«
-	///        THOST_TERT_QUICK:Ö»´«ËÍµÇÂ¼ºó¹«¹²Á÷µÄÄÚÈİ
-	///@remark ¸Ã·½·¨ÒªÔÚInit·½·¨Ç°µ÷ÓÃ¡£Èô²»µ÷ÓÃÔò²»»áÊÕµ½¹«¹²Á÷µÄÊı¾İ¡£
+	///è®¢é˜…å…¬å…±æµã€‚
+	///@param nResumeType å…¬å…±æµé‡ä¼ æ–¹å¼  
+	///        THOST_TERT_RESTART:ä»æœ¬äº¤æ˜“æ—¥å¼€å§‹é‡ä¼ 
+	///        THOST_TERT_RESUME:ä»ä¸Šæ¬¡æ”¶åˆ°çš„ç»­ä¼ 
+	///        THOST_TERT_QUICK:åªä¼ é€ç™»å½•åå…¬å…±æµçš„å†…å®¹
+	///@remark è¯¥æ–¹æ³•è¦åœ¨Initæ–¹æ³•å‰è°ƒç”¨ã€‚è‹¥ä¸è°ƒç”¨åˆ™ä¸ä¼šæ”¶åˆ°å…¬å…±æµçš„æ•°æ®ã€‚
 	virtual void SubscribePublicTopic(THOST_TE_RESUME_TYPE nResumeType);
 
-	///ÓÃ»§µÇÂ¼ÇëÇó
+	///ç”¨æˆ·ç™»å½•è¯·æ±‚
 	virtual int ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLogin, int nRequestID);
 
-	///ÓÃ»§ÍË³öÇëÇó
+	///ç”¨æˆ·é€€å‡ºè¯·æ±‚
 	virtual int ReqUserLogout(CThostFtdcUserLogoutField *pUserLogout, int nRequestID);
-	///ÓÃ»§ÃÜÂëĞŞ¸ÄÇëÇó
+	///ç”¨æˆ·å¯†ç ä¿®æ”¹è¯·æ±‚
 	virtual int ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID);
 
-	///±¨µ¥Â¼ÈëÇëÇó
+	///æŠ¥å•å½•å…¥è¯·æ±‚
 	virtual int ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int nRequestID);
 
-	///±¨µ¥²Ù×÷ÇëÇó
+	///æŠ¥å•æ“ä½œè¯·æ±‚
 	virtual int ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, int nRequestID);
 
-	///±¨µ¥²éÑ¯ÇëÇó
+	///æŠ¥å•æŸ¥è¯¢è¯·æ±‚
 	virtual int ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nRequestID);
 
-	///³É½»µ¥²éÑ¯ÇëÇó
+	///æˆäº¤å•æŸ¥è¯¢è¯·æ±‚
 	virtual int ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nRequestID);
 
-	///ÇëÇó²éÑ¯×Ê½ğÕË»§
+	///è¯·æ±‚æŸ¥è¯¢èµ„é‡‘è´¦æˆ·
 	virtual int ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID);
 
-	///ºÏÔ¼²éÑ¯ÇëÇó
+	///åˆçº¦æŸ¥è¯¢è¯·æ±‚
 	virtual int ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, int nRequestID);
 
-	///½»Ò×Ëù²éÑ¯ÇëÇó
+	///äº¤æ˜“æ‰€æŸ¥è¯¢è¯·æ±‚
 	virtual int ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID);
 
-	///Í¶×ÊÕß³Ö²Ö²éÑ¯ÇëÇó
+	///æŠ•èµ„è€…æŒä»“æŸ¥è¯¢è¯·æ±‚
 	virtual int ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *pQryInvestorPosition, int nRequestID);
 
-	///ÇëÇó²éÑ¯ºÏÔ¼±£Ö¤½ğÂÊ
+	///è¯·æ±‚æŸ¥è¯¢åˆçº¦ä¿è¯é‡‘ç‡
 	virtual int ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRateField *pQryInstrumentMarginRate, int nRequestID);
 	
-	///ÇëÇó²éÑ¯ºÏÔ¼ÊÖĞø·ÑÂÊ
+	///è¯·æ±‚æŸ¥è¯¢åˆçº¦æ‰‹ç»­è´¹ç‡
 	virtual int ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID);	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕß
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…
 	virtual int ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor, int nRequestID);
 
-	///ÇëÇó²éÑ¯ĞĞÇé
+	///è¯·æ±‚æŸ¥è¯¢è¡Œæƒ…
 	virtual int ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQryDepthMarketData, int nRequestID);
 
-	///ÇëÇó²éÑ¯²úÆ·
+	///è¯·æ±‚æŸ¥è¯¢äº§å“
 	virtual int ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID);
 	virtual int HandleReqQryProduct(CThostFtdcQryProductField QryProduct, int nRequestID);
 
 	
-	///Í¶×ÊÕß½áËã½á¹ûÈ·ÈÏ
+	///æŠ•èµ„è€…ç»“ç®—ç»“æœç¡®è®¤
 	virtual int ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID);
 
-	///ÇëÇó²éÑ¯¾­¼Í¹«Ë¾½»Ò×²ÎÊı
+	///è¯·æ±‚æŸ¥è¯¢ç»çºªå…¬å¸äº¤æ˜“å‚æ•°
 	virtual int ReqQryBrokerTradingParams(CThostFtdcQryBrokerTradingParamsField *pQryBrokerTradingParams, int nRequestID);
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕß³Ö²ÖÃ÷Ï¸
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…æŒä»“æ˜ç»†
 	virtual int ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetailField *pQryInvestorPositionDetail, int nRequestID);
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕß³Ö²ÖÃ÷Ï¸
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…æŒä»“æ˜ç»†
 	virtual int ReqQryInvestorPositionCombineDetail(CThostFtdcQryInvestorPositionCombineDetailField *pQryInvestorPositionCombineDetail, int nRequestID);
 
-	///ÇëÇó²éÑ¯½áËãĞÅÏ¢È·ÈÏ
+	///è¯·æ±‚æŸ¥è¯¢ç»“ç®—ä¿¡æ¯ç¡®è®¤
 	virtual int ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, int nRequestID);
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕß½áËã½á¹û
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…ç»“ç®—ç»“æœ
 	virtual int ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, int nRequestID);
 
-	///ÇëÇó²éÑ¯²úÆ·×é
+	///è¯·æ±‚æŸ¥è¯¢äº§å“ç»„
 	virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID);
 
-	///ÇëÇó²éÑ¯ÒøÆÚÇ©Ô¼¹ØÏµ
+	///è¯·æ±‚æŸ¥è¯¢é“¶æœŸç­¾çº¦å…³ç³»
 	virtual int ReqQryAccountregister(CThostFtdcQryAccountregisterField *pQryAccountregister, int nRequestID);
 
-	///ÇëÇó²éÑ¯Ç©Ô¼ÒøĞĞ
+	///è¯·æ±‚æŸ¥è¯¢ç­¾çº¦é“¶è¡Œ
 	virtual int ReqQryContractBank(CThostFtdcQryContractBankField *pQryContractBank, int nRequestID);
 
-	///ÇëÇó²éÑ¯½»Ò×Í¨Öª
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“é€šçŸ¥
 	virtual int ReqQryTradingNotice(CThostFtdcQryTradingNoticeField *pQryTradingNotice, int nRequestID);
 
 
-	///ÇëÇó²éÑ¯¿Í»§Í¨Öª
+	///è¯·æ±‚æŸ¥è¯¢å®¢æˆ·é€šçŸ¥
 	virtual int ReqQryNotice(CThostFtdcQryNoticeField *pQryNotice, int nRequestID);
 	
-	///¿Í»§¶ËÈÏÖ¤ÇëÇó
+	///å®¢æˆ·ç«¯è®¤è¯è¯·æ±‚
 	virtual int ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuthenticateField, int nRequestID);
 	virtual void HandleReqAuthenticate(CThostFtdcReqAuthenticateField& AuthenticateField, int nRequestID);
 
 
-	///ÇëÇó²éÑ¯×ªÕÊÁ÷Ë®
+	///è¯·æ±‚æŸ¥è¯¢è½¬å¸æµæ°´
 	virtual int ReqQryTransferSerial(CThostFtdcQryTransferSerialField *pQryTransferSerial, int nRequestID);
 
-	///ÇëÇó²éÑ¯×ªÕÊÒøĞĞ
+	///è¯·æ±‚æŸ¥è¯¢è½¬å¸é“¶è¡Œ
 	virtual int ReqQryTransferBank(CThostFtdcQryTransferBankField *pQryTransferBank, int nRequestID);
 
-	///ÇëÇó²éÑ¯Ñ¯¼Û
+	///è¯·æ±‚æŸ¥è¯¢è¯¢ä»·
 	virtual int ReqQryForQuote(CThostFtdcQryForQuoteField *pQryForQuote, int nRequestID);
 	
 
-	///×Ê½ğÕË»§¿ÚÁî¸üĞÂÇëÇó
+	///èµ„é‡‘è´¦æˆ·å£ä»¤æ›´æ–°è¯·æ±‚
 	virtual int ReqTradingAccountPasswordUpdate(CThostFtdcTradingAccountPasswordUpdateField *pTradingAccountPasswordUpdate, int nRequestID){return -3;};
 
-	///Ô¤Âñµ¥Â¼ÈëÇëÇó
+	///é¢„åŸ‹å•å½•å…¥è¯·æ±‚
 	virtual int ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrder, int nRequestID){return -3;};
 
-	///Ô¤Âñ³·µ¥Â¼ÈëÇëÇó
+	///é¢„åŸ‹æ’¤å•å½•å…¥è¯·æ±‚
 	virtual int ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pParkedOrderAction, int nRequestID){return -3;};
 
-	///²éÑ¯×î´ó±¨µ¥ÊıÁ¿ÇëÇó
+	///æŸ¥è¯¢æœ€å¤§æŠ¥å•æ•°é‡è¯·æ±‚
 #ifdef V6_5_1
 	virtual int ReqQueryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField *pQueryMaxOrderVolume, int nRequestID){return -3;};
 #else
 	virtual int ReqQueryMaxOrderVolume(CThostFtdcQueryMaxOrderVolumeField *pQueryMaxOrderVolume, int nRequestID){return -3;};
 #endif
-	///ÇëÇóÉ¾³ıÔ¤Âñµ¥
+	///è¯·æ±‚åˆ é™¤é¢„åŸ‹å•
 	virtual int ReqRemoveParkedOrder(CThostFtdcRemoveParkedOrderField *pRemoveParkedOrder, int nRequestID){return -3;};
 
-	///ÇëÇóÉ¾³ıÔ¤Âñ³·µ¥
+	///è¯·æ±‚åˆ é™¤é¢„åŸ‹æ’¤å•
 	virtual int ReqRemoveParkedOrderAction(CThostFtdcRemoveParkedOrderActionField *pRemoveParkedOrderAction, int nRequestID){return -3;};
 
-	///Ö´ĞĞĞû¸æÂ¼ÈëÇëÇó
+	///æ‰§è¡Œå®£å‘Šå½•å…¥è¯·æ±‚
 	virtual int ReqExecOrderInsert(CThostFtdcInputExecOrderField *pInputExecOrder, int nRequestID);
 
-	///Ö´ĞĞĞû¸æ²Ù×÷ÇëÇó
+	///æ‰§è¡Œå®£å‘Šæ“ä½œè¯·æ±‚
 	virtual int ReqExecOrderAction(CThostFtdcInputExecOrderActionField *pInputExecOrderAction, int nRequestID);
 
-	///Ñ¯¼ÛÂ¼ÈëÇëÇó
+	///è¯¢ä»·å½•å…¥è¯·æ±‚
 	virtual int ReqForQuoteInsert(CThostFtdcInputForQuoteField *pInputForQuote, int nRequestID);
 
-	///±¨¼ÛÂ¼ÈëÇëÇó
+	///æŠ¥ä»·å½•å…¥è¯·æ±‚
 	virtual int ReqQuoteInsert(CThostFtdcInputQuoteField *pInputQuote, int nRequestID);
 
-	///±¨¼Û²Ù×÷ÇëÇó
+	///æŠ¥ä»·æ“ä½œè¯·æ±‚
 	virtual int ReqQuoteAction(CThostFtdcInputQuoteActionField *pInputQuoteAction, int nRequestID);
 
-	///ÅúÁ¿±¨µ¥²Ù×÷ÇëÇó
+	///æ‰¹é‡æŠ¥å•æ“ä½œè¯·æ±‚
 	virtual int ReqBatchOrderAction(CThostFtdcInputBatchOrderActionField *pInputBatchOrderAction, int nRequestID){return -3;};
 
-	///ÆÚÈ¨×Ô¶Ô³åÂ¼ÈëÇëÇó
+	///æœŸæƒè‡ªå¯¹å†²å½•å…¥è¯·æ±‚
 	virtual int ReqOptionSelfCloseInsert(CThostFtdcInputOptionSelfCloseField *pInputOptionSelfClose, int nRequestID);
 
-	///ÆÚÈ¨×Ô¶Ô³å²Ù×÷ÇëÇó
+	///æœŸæƒè‡ªå¯¹å†²æ“ä½œè¯·æ±‚
 	virtual int ReqOptionSelfCloseAction(CThostFtdcInputOptionSelfCloseActionField *pInputOptionSelfCloseAction, int nRequestID);
 
-	///ÉêÇë×éºÏÂ¼ÈëÇëÇó
+	///ç”³è¯·ç»„åˆå½•å…¥è¯·æ±‚
 	virtual int ReqCombActionInsert(CThostFtdcInputCombActionField *pInputCombAction, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯½»Ò×±àÂë
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“ç¼–ç 
 	virtual int ReqQryTradingCode(CThostFtdcQryTradingCodeField* pQryTradingCode, int nRequestID);
 
-	///ÇëÇó²éÑ¯±£Ö¤½ğ¼à¹ÜÏµÍ³¾­¼Í¹«Ë¾×Ê½ğÕË»§ÃÜÔ¿
+	///è¯·æ±‚æŸ¥è¯¢ä¿è¯é‡‘ç›‘ç®¡ç³»ç»Ÿç»çºªå…¬å¸èµ„é‡‘è´¦æˆ·å¯†é’¥
 	virtual int ReqQryCFMMCTradingAccountKey(CThostFtdcQryCFMMCTradingAccountKeyField *pQryCFMMCTradingAccountKey, int nRequestID);
 
-	///ÇëÇó²éÑ¯²Öµ¥ÕÛµÖĞÅÏ¢
+	///è¯·æ±‚æŸ¥è¯¢ä»“å•æŠ˜æŠµä¿¡æ¯
 	virtual int ReqQryEWarrantOffset(CThostFtdcQryEWarrantOffsetField *pQryEWarrantOffset, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÆ·ÖÖ/¿çÆ·ÖÖ±£Ö¤½ğ
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…å“ç§/è·¨å“ç§ä¿è¯é‡‘
 	virtual int ReqQryInvestorProductGroupMargin(CThostFtdcQryInvestorProductGroupMarginField *pQryInvestorProductGroupMargin, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯½»Ò×Ëù±£Ö¤½ğÂÊ
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“æ‰€ä¿è¯é‡‘ç‡
 	virtual int ReqQryExchangeMarginRate(CThostFtdcQryExchangeMarginRateField* pQryExchangeMarginRate, int nRequestID);
 
-	///ÇëÇó²éÑ¯½»Ò×Ëùµ÷Õû±£Ö¤½ğÂÊ
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“æ‰€è°ƒæ•´ä¿è¯é‡‘ç‡
 	virtual int ReqQryExchangeMarginRateAdjust(CThostFtdcQryExchangeMarginRateAdjustField *pQryExchangeMarginRateAdjust, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯»ãÂÊ
+	///è¯·æ±‚æŸ¥è¯¢æ±‡ç‡
 	virtual int ReqQryExchangeRate(CThostFtdcQryExchangeRateField *pQryExchangeRate, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯¶ş¼¶´úÀí²Ù×÷Ô±ÒøÆÚÈ¨ÏŞ
+	///è¯·æ±‚æŸ¥è¯¢äºŒçº§ä»£ç†æ“ä½œå‘˜é“¶æœŸæƒé™
 	virtual int ReqQrySecAgentACIDMap(CThostFtdcQrySecAgentACIDMapField *pQrySecAgentACIDMap, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯²úÆ·±¨¼Û»ãÂÊ
+	///è¯·æ±‚æŸ¥è¯¢äº§å“æŠ¥ä»·æ±‡ç‡
 	virtual int ReqQryProductExchRate(CThostFtdcQryProductExchRateField *pQryProductExchRate, int nRequestID){return -3;};
 
-	///ÇëÇó²éÑ¯×öÊĞÉÌºÏÔ¼ÊÖĞø·ÑÂÊ
+	///è¯·æ±‚æŸ¥è¯¢åšå¸‚å•†åˆçº¦æ‰‹ç»­è´¹ç‡
 	virtual int ReqQryMMInstrumentCommissionRate(CThostFtdcQryMMInstrumentCommissionRateField *pQryMMInstrumentCommissionRate, int nRequestID) {return -3; };
 
-	///ÇëÇó²éÑ¯×öÊĞÉÌÆÚÈ¨ºÏÔ¼ÊÖĞø·Ñ
+	///è¯·æ±‚æŸ¥è¯¢åšå¸‚å•†æœŸæƒåˆçº¦æ‰‹ç»­è´¹
 	virtual int ReqQryMMOptionInstrCommRate(CThostFtdcQryMMOptionInstrCommRateField *pQryMMOptionInstrCommRate, int nRequestID) {return -3; };
 
-	///ÇëÇó²éÑ¯±¨µ¥ÊÖĞø·Ñ
+	///è¯·æ±‚æŸ¥è¯¢æŠ¥å•æ‰‹ç»­è´¹
 	virtual int ReqQryInstrumentOrderCommRate(CThostFtdcQryInstrumentOrderCommRateField* pQryInstrumentOrderCommRate, int nRequestID);
 
-	///ÇëÇó²éÑ¯×Ê½ğÕË»§
+	///è¯·æ±‚æŸ¥è¯¢èµ„é‡‘è´¦æˆ·
 	virtual int ReqQrySecAgentTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID) {return -3; };
 
-	///ÇëÇó²éÑ¯¶ş¼¶´úÀíÉÌ×Ê½ğĞ£ÑéÄ£Ê½
+	///è¯·æ±‚æŸ¥è¯¢äºŒçº§ä»£ç†å•†èµ„é‡‘æ ¡éªŒæ¨¡å¼
 	virtual int ReqQrySecAgentCheckMode(CThostFtdcQrySecAgentCheckModeField *pQrySecAgentCheckMode, int nRequestID) {return -3; };
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨½»Ò×³É±¾
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒäº¤æ˜“æˆæœ¬
 	virtual int ReqQryOptionInstrTradeCost(CThostFtdcQryOptionInstrTradeCostField* pQryOptionInstrTradeCost, int nRequestID);
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨ºÏÔ¼ÊÖĞø·Ñ
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒåˆçº¦æ‰‹ç»­è´¹
 	virtual int ReqQryOptionInstrCommRate(CThostFtdcQryOptionInstrCommRateField* pQryOptionInstrCommRate, int nRequestID);
 
-	///ÇëÇó²éÑ¯Ö´ĞĞĞû¸æ
+	///è¯·æ±‚æŸ¥è¯¢æ‰§è¡Œå®£å‘Š
 	virtual int ReqQryExecOrder(CThostFtdcQryExecOrderField* pQryExecOrder, int nRequestID);
 
-	///ÇëÇó²éÑ¯±¨¼Û
+	///è¯·æ±‚æŸ¥è¯¢æŠ¥ä»·
 	virtual int ReqQryQuote(CThostFtdcQryQuoteField* pQryQuote, int nRequestID);
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨×Ô¶Ô³å
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒè‡ªå¯¹å†²
 	virtual int ReqQryOptionSelfClose(CThostFtdcQryOptionSelfCloseField* pQryOptionSelfClose, int nRequestID);
 
-	///ÇëÇó²éÑ¯Í¶×Êµ¥Ôª
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„å•å…ƒ
 	virtual int ReqQryInvestUnit(CThostFtdcQryInvestUnitField* pQryInvestUnit, int nRequestID);
 
-	///ÇëÇó²éÑ¯×éºÏºÏÔ¼°²È«ÏµÊı
+	///è¯·æ±‚æŸ¥è¯¢ç»„åˆåˆçº¦å®‰å…¨ç³»æ•°
 	virtual int ReqQryCombInstrumentGuard(CThostFtdcQryCombInstrumentGuardField* pQryCombInstrumentGuard, int nRequestID);
 
-	///ÇëÇó²éÑ¯ÉêÇë×éºÏ
+	///è¯·æ±‚æŸ¥è¯¢ç”³è¯·ç»„åˆ
 	virtual int ReqQryCombAction(CThostFtdcQryCombActionField* pQryCombAction, int nRequestID);
 
-	///ÇëÇó²éÑ¯Ô¤Âñµ¥
+	///è¯·æ±‚æŸ¥è¯¢é¢„åŸ‹å•
 	virtual int ReqQryParkedOrder(CThostFtdcQryParkedOrderField* pQryParkedOrder, int nRequestID);
 
-	///ÇëÇó²éÑ¯Ô¤Âñ³·µ¥
+	///è¯·æ±‚æŸ¥è¯¢é¢„åŸ‹æ’¤å•
 	virtual int ReqQryParkedOrderAction(CThostFtdcQryParkedOrderActionField* pQryParkedOrderAction, int nRequestID);
 
-	///ÇëÇó²éÑ¯¾­¼Í¹«Ë¾½»Ò×Ëã·¨
+	///è¯·æ±‚æŸ¥è¯¢ç»çºªå…¬å¸äº¤æ˜“ç®—æ³•
 	virtual int ReqQryBrokerTradingAlgos(CThostFtdcQryBrokerTradingAlgosField* pQryBrokerTradingAlgos, int nRequestID);
 
-	///ÇëÇó²éÑ¯¼à¿ØÖĞĞÄÓÃ»§ÁîÅÆ
+	///è¯·æ±‚æŸ¥è¯¢ç›‘æ§ä¸­å¿ƒç”¨æˆ·ä»¤ç‰Œ
 	virtual int ReqQueryCFMMCTradingAccountToken(CThostFtdcQueryCFMMCTradingAccountTokenField* pQueryCFMMCTradingAccountToken, int nRequestID);
 
-	///ÆÚ»õ·¢ÆğÒøĞĞ×Ê½ğ×ªÆÚ»õÇëÇó
+	///æœŸè´§å‘èµ·é“¶è¡Œèµ„é‡‘è½¬æœŸè´§è¯·æ±‚
 	virtual int ReqFromBankToFutureByFuture(CThostFtdcReqTransferField *pReqTransfer, int nRequestID){return -3;};
 
-	///ÆÚ»õ·¢ÆğÆÚ»õ×Ê½ğ×ªÒøĞĞÇëÇó
+	///æœŸè´§å‘èµ·æœŸè´§èµ„é‡‘è½¬é“¶è¡Œè¯·æ±‚
 	virtual int ReqFromFutureToBankByFuture(CThostFtdcReqTransferField *pReqTransfer, int nRequestID){return -3;};
 
-	///ÆÚ»õ·¢Æğ²éÑ¯ÒøĞĞÓà¶îÇëÇó
+	///æœŸè´§å‘èµ·æŸ¥è¯¢é“¶è¡Œä½™é¢è¯·æ±‚
 	virtual int ReqQueryBankAccountMoneyByFuture(CThostFtdcReqQueryAccountField* pReqQueryAccount, int nRequestID);
 
-	///×¢²áÓÃ»§ÖÕ¶ËĞÅÏ¢£¬ÓÃÓÚÖĞ¼Ì·şÎñÆ÷¶àÁ¬½ÓÄ£Ê½
-	///ĞèÒªÔÚÖÕ¶ËÈÏÖ¤³É¹¦ºó£¬ÓÃ»§µÇÂ¼Ç°µ÷ÓÃ¸Ã½Ó¿Ú
+	///æ³¨å†Œç”¨æˆ·ç»ˆç«¯ä¿¡æ¯ï¼Œç”¨äºä¸­ç»§æœåŠ¡å™¨å¤šè¿æ¥æ¨¡å¼
+	///éœ€è¦åœ¨ç»ˆç«¯è®¤è¯æˆåŠŸåï¼Œç”¨æˆ·ç™»å½•å‰è°ƒç”¨è¯¥æ¥å£
 	virtual int RegisterUserSystemInfo(CThostFtdcUserSystemInfoField *pUserSystemInfo) {return -3;};
 
-	///ÉÏ±¨ÓÃ»§ÖÕ¶ËĞÅÏ¢£¬ÓÃÓÚÖĞ¼Ì·şÎñÆ÷²Ù×÷Ô±µÇÂ¼Ä£Ê½
-	///²Ù×÷Ô±µÇÂ¼ºó£¬¿ÉÒÔ¶à´Îµ÷ÓÃ¸Ã½Ó¿ÚÉÏ±¨¿Í»§ĞÅÏ¢
+	///ä¸ŠæŠ¥ç”¨æˆ·ç»ˆç«¯ä¿¡æ¯ï¼Œç”¨äºä¸­ç»§æœåŠ¡å™¨æ“ä½œå‘˜ç™»å½•æ¨¡å¼
+	///æ“ä½œå‘˜ç™»å½•åï¼Œå¯ä»¥å¤šæ¬¡è°ƒç”¨è¯¥æ¥å£ä¸ŠæŠ¥å®¢æˆ·ä¿¡æ¯
 	virtual int SubmitUserSystemInfo(CThostFtdcUserSystemInfoField *pUserSystemInfo) {return -3;};
 
-	///²éÑ¯ÓÃ»§µ±Ç°Ö§³ÖµÄÈÏÖ¤Ä£Ê½
+	///æŸ¥è¯¢ç”¨æˆ·å½“å‰æ”¯æŒçš„è®¤è¯æ¨¡å¼
 	virtual int ReqUserAuthMethod(CThostFtdcReqUserAuthMethodField* pReqUserAuthMethod, int nRequestID);
 
-	///ÓÃ»§·¢³ö»ñÈ¡Í¼ĞÎÑéÖ¤ÂëÇëÇó
+	///ç”¨æˆ·å‘å‡ºè·å–å›¾å½¢éªŒè¯ç è¯·æ±‚
 	virtual int ReqGenUserCaptcha(CThostFtdcReqGenUserCaptchaField *pReqGenUserCaptcha, int nRequestID) {return -3;};
 
-	///ÓÃ»§·¢³ö»ñÈ¡¶ÌĞÅÑéÖ¤ÂëÇëÇó
+	///ç”¨æˆ·å‘å‡ºè·å–çŸ­ä¿¡éªŒè¯ç è¯·æ±‚
 	virtual int ReqGenUserText(CThostFtdcReqGenUserTextField *pReqGenUserText, int nRequestID) {return -3;};
 
-	///ÓÃ»§·¢³ö´øÓĞÍ¼Æ¬ÑéÖ¤ÂëµÄµÇÂ½ÇëÇó
+	///ç”¨æˆ·å‘å‡ºå¸¦æœ‰å›¾ç‰‡éªŒè¯ç çš„ç™»é™†è¯·æ±‚
 	virtual int ReqUserLoginWithCaptcha(CThostFtdcReqUserLoginWithCaptchaField *pReqUserLoginWithCaptcha, int nRequestID) {return -3;};
 
-	///ÓÃ»§·¢³ö´øÓĞ¶ÌĞÅÑéÖ¤ÂëµÄµÇÂ½ÇëÇó
+	///ç”¨æˆ·å‘å‡ºå¸¦æœ‰çŸ­ä¿¡éªŒè¯ç çš„ç™»é™†è¯·æ±‚
 	virtual int ReqUserLoginWithText(CThostFtdcReqUserLoginWithTextField *pReqUserLoginWithText, int nRequestID) {return -3;};
 
-	///ÓÃ»§·¢³ö´øÓĞ¶¯Ì¬¿ÚÁîµÄµÇÂ½ÇëÇó
+	///ç”¨æˆ·å‘å‡ºå¸¦æœ‰åŠ¨æ€å£ä»¤çš„ç™»é™†è¯·æ±‚
 	virtual int ReqUserLoginWithOTP(CThostFtdcReqUserLoginWithOTPField *pReqUserLoginWithOTP, int nRequestID) {return -3;};
 
-	///ÇëÇó²éÑ¯¶ş¼¶´úÀíÉÌĞÅÏ¢
+	///è¯·æ±‚æŸ¥è¯¢äºŒçº§ä»£ç†å•†ä¿¡æ¯
 	virtual int ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoField* pQrySecAgentTradeInfo, int nRequestID);
 
 #ifdef V6_5_1
-	///²éÑ¯×î´ó±¨µ¥ÊıÁ¿ÇëÇó
+	///æŸ¥è¯¢æœ€å¤§æŠ¥å•æ•°é‡è¯·æ±‚
 	virtual int ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField* pQryMaxOrderVolume, int nRequestID);
 	void HandleReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField& QryMaxOrderVolume, int nRequestID);
 
-	///ÇëÇó²éÑ¯·ÖÀàºÏÔ¼
+	///è¯·æ±‚æŸ¥è¯¢åˆ†ç±»åˆçº¦
 	virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID);
 
-	///ÇëÇó×éºÏÓÅ»İ±ÈÀı
+	///è¯·æ±‚ç»„åˆä¼˜æƒ æ¯”ä¾‹
 	virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField* pQryCombPromotionParam, int nRequestID);
 #endif
 
 #ifdef V6_6_1_P1
-	///Í¶×ÊÕß·çÏÕ½áËã³Ö²Ö²éÑ¯
+	///æŠ•èµ„è€…é£é™©ç»“ç®—æŒä»“æŸ¥è¯¢
 	virtual int ReqQryRiskSettleInvstPosition(CThostFtdcQryRiskSettleInvstPositionField* pQryRiskSettleInvstPosition, int nRequestID);
 
-	///·çÏÕ½áËã²úÆ·²éÑ¯
+	///é£é™©ç»“ç®—äº§å“æŸ¥è¯¢
 	virtual int ReqQryRiskSettleProductStatus(CThostFtdcQryRiskSettleProductStatusField* pQryRiskSettleProductStatus, int nRequestID);
 #endif
 
 #if defined(V6_6_7) || defined(V6_6_5_P1)
-	///ÇëÇó²éÑ¯½»Ò×Ô±±¨ÅÌ»ú
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“å‘˜æŠ¥ç›˜æœº
 	virtual int ReqQryTraderOffer(CThostFtdcQryTraderOfferField* pQryTraderOffer, int nRequestID);
 #endif
 
 #ifdef V6_6_9
-	///SPBMÆÚ»õºÏÔ¼²ÎÊı²éÑ¯
+	///SPBMæœŸè´§åˆçº¦å‚æ•°æŸ¥è¯¢
 	virtual int ReqQrySPBMFutureParameter(CThostFtdcQrySPBMFutureParameterField* pQrySPBMFutureParameter, int nRequestID);
 
-	///SPBMÆÚÈ¨ºÏÔ¼²ÎÊı²éÑ¯
+	///SPBMæœŸæƒåˆçº¦å‚æ•°æŸ¥è¯¢
 	virtual int ReqQrySPBMOptionParameter(CThostFtdcQrySPBMOptionParameterField* pQrySPBMOptionParameter, int nRequestID);
 
-	///SPBMÆ·ÖÖÄÚ¶ÔËø²ÖÕÛ¿Û²ÎÊı²éÑ¯
+	///SPBMå“ç§å†…å¯¹é”ä»“æŠ˜æ‰£å‚æ•°æŸ¥è¯¢
 	virtual int ReqQrySPBMIntraParameter(CThostFtdcQrySPBMIntraParameterField* pQrySPBMIntraParameter, int nRequestID);
 
-	///SPBM¿çÆ·ÖÖµÖ¿Û²ÎÊı²éÑ¯
+	///SPBMè·¨å“ç§æŠµæ‰£å‚æ•°æŸ¥è¯¢
 	virtual int ReqQrySPBMInterParameter(CThostFtdcQrySPBMInterParameterField* pQrySPBMInterParameter, int nRequestID);
 
-	///SPBM×éºÏ±£Ö¤½ğÌ×²Í²éÑ¯
+	///SPBMç»„åˆä¿è¯é‡‘å¥—é¤æŸ¥è¯¢
 	virtual int ReqQrySPBMPortfDefinition(CThostFtdcQrySPBMPortfDefinitionField* pQrySPBMPortfDefinition, int nRequestID);
 
-	///Í¶×ÊÕßSPBMÌ×²ÍÑ¡Ôñ²éÑ¯
+	///æŠ•èµ„è€…SPBMå¥—é¤é€‰æ‹©æŸ¥è¯¢
 	virtual int ReqQrySPBMInvestorPortfDef(CThostFtdcQrySPBMInvestorPortfDefField* pQrySPBMInvestorPortfDef, int nRequestID);
 
-	///Í¶×ÊÕßĞÂĞÍ×éºÏ±£Ö¤½ğÏµÊı²éÑ¯
+	///æŠ•èµ„è€…æ–°å‹ç»„åˆä¿è¯é‡‘ç³»æ•°æŸ¥è¯¢
 	virtual int ReqQryInvestorPortfMarginRatio(CThostFtdcQryInvestorPortfMarginRatioField* pQryInvestorPortfMarginRatio, int nRequestID);
 
-	///Í¶×ÊÕß²úÆ·SPBMÃ÷Ï¸²éÑ¯
+	///æŠ•èµ„è€…äº§å“SPBMæ˜ç»†æŸ¥è¯¢
 	virtual int ReqQryInvestorProdSPBMDetail(CThostFtdcQryInvestorProdSPBMDetailField* pQryInvestorProdSPBMDetail, int nRequestID);
 #endif
 
 private:
-	///µ±¿Í»§¶ËÓë½»Ò×ºóÌ¨½¨Á¢ÆğÍ¨ĞÅÁ¬½ÓÊ±£¨»¹Î´µÇÂ¼Ç°£©£¬¸Ã·½·¨±»µ÷ÓÃ¡£
+	///å½“å®¢æˆ·ç«¯ä¸äº¤æ˜“åå°å»ºç«‹èµ·é€šä¿¡è¿æ¥æ—¶ï¼ˆè¿˜æœªç™»å½•å‰ï¼‰ï¼Œè¯¥æ–¹æ³•è¢«è°ƒç”¨ã€‚
 	virtual void OnFrontConnected();
 	
-	///µ±¿Í»§¶ËÓë½»Ò×ºóÌ¨Í¨ĞÅÁ¬½Ó¶Ï¿ªÊ±£¬¸Ã·½·¨±»µ÷ÓÃ¡£µ±·¢ÉúÕâ¸öÇé¿öºó£¬API»á×Ô¶¯ÖØĞÂÁ¬½Ó£¬¿Í»§¶Ë¿É²»×ö´¦Àí¡£
-	///@param nReason ´íÎóÔ­Òò
-	///        0x1001 ÍøÂç¶ÁÊ§°Ü
-	///        0x1002 ÍøÂçĞ´Ê§°Ü
-	///        0x2001 ½ÓÊÕĞÄÌø³¬Ê±
-	///        0x2002 ·¢ËÍĞÄÌøÊ§°Ü
-	///        0x2003 ÊÕµ½´íÎó±¨ÎÄ
+	///å½“å®¢æˆ·ç«¯ä¸äº¤æ˜“åå°é€šä¿¡è¿æ¥æ–­å¼€æ—¶ï¼Œè¯¥æ–¹æ³•è¢«è°ƒç”¨ã€‚å½“å‘ç”Ÿè¿™ä¸ªæƒ…å†µåï¼ŒAPIä¼šè‡ªåŠ¨é‡æ–°è¿æ¥ï¼Œå®¢æˆ·ç«¯å¯ä¸åšå¤„ç†ã€‚
+	///@param nReason é”™è¯¯åŸå› 
+	///        0x1001 ç½‘ç»œè¯»å¤±è´¥
+	///        0x1002 ç½‘ç»œå†™å¤±è´¥
+	///        0x2001 æ¥æ”¶å¿ƒè·³è¶…æ—¶
+	///        0x2002 å‘é€å¿ƒè·³å¤±è´¥
+	///        0x2003 æ”¶åˆ°é”™è¯¯æŠ¥æ–‡
 	virtual void OnFrontDisconnected(int nReason);
 		
-	//ÇëÇóºóÌ¨²»Ö§³ÖµÄ¹¦ÄÜÊ±µ÷ÓÃ
+	//è¯·æ±‚åå°ä¸æ”¯æŒçš„åŠŸèƒ½æ—¶è°ƒç”¨
 	virtual void OnRspError(CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast);
 	
 
-	///±¨µ¥
+	///æŠ¥å•
 	virtual void OnRtnOrder(CUTOrderField *pOrder);
 
-	///³É½»
-	virtual void OnRtnTrade(CUTTradeField *pTrade) {};
+	///æˆäº¤
+	virtual void OnRtnTrade(CUTTradeField *pTrade);
 
-	///±¨µ¥²Ù×÷»Ø±¨
-	virtual void OnErrRtnOrderAction(CUTOrderActionField *pOrderAction) {};
+	///æŠ¥å•æ“ä½œå›æŠ¥
+	virtual void OnErrRtnOrderAction(CUTOrderActionField *pOrderAction);
 	
 
-	///±¨µ¥´íÎó»Ø±¨
+	///æŠ¥å•é”™è¯¯å›æŠ¥
 	virtual void OnRspOrderInsert(CUTInputOrderField *pInputOrder, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///±¨µ¥²Ù×÷»Ø±¨
+	///æŠ¥å•æ“ä½œå›æŠ¥
 	virtual void OnRspOrderAction(CUTInputOrderActionField *pInputOrderAction, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÓÃ»§µÇÈëÓ¦´ğ
+	///ç”¨æˆ·ç™»å…¥åº”ç­”
 	virtual void OnRspLogin(CUTRspLoginField *pRspLogin, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÃÜÂëĞŞ¸ÄÓ¦´ğ
+	///å¯†ç ä¿®æ”¹åº”ç­”
 	virtual void OnRspUserPasswordUpdate(CUTUserPasswordUpdateField *pUserPasswordUpdate, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///×ªÕË´íÎó»Ø±¨
+	///è½¬è´¦é”™è¯¯å›æŠ¥
 	virtual void OnRspTransferInsert(CUTInputTransferField *pInputTransfer, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///×ªÕË
+	///è½¬è´¦
 	virtual void OnRtnTransfer(CUTTransferField *pTransfer) {};
 
-	///Ö±½Ó»¹¿î´íÎó»Ø±¨
+	///ç›´æ¥è¿˜æ¬¾é”™è¯¯å›æŠ¥
 	virtual void OnRspFundPaybackInsert(CUTInputFundPaybackField *pInputFundPayback, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///Ö±½Ó»¹¿î
+	///ç›´æ¥è¿˜æ¬¾
 	virtual void OnRtnFundPayback(CUTFundPaybackField *pFundPayback) {};
 
-	///Ö±½Ó»¹È¯´íÎó»Ø±¨
+	///ç›´æ¥è¿˜åˆ¸é”™è¯¯å›æŠ¥
 	virtual void OnRspStockPaybackInsert(CUTInputStockPaybackField *pInputStockPayback, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///Ö±½Ó»¹È¯
+	///ç›´æ¥è¿˜åˆ¸
 	virtual void OnRtnStockPayback(CUTStockPaybackField *pStockPayback) {};
 
-	///Í¬²½×é¼ş·µ»ØµÄÈ¯Ô´±£µ×¶î¶ÈĞÅÏ¢
+	///åŒæ­¥ç»„ä»¶è¿”å›çš„åˆ¸æºä¿åº•é¢åº¦ä¿¡æ¯
 	virtual void OnRtnPrivateCreditStock(CUTPrivateCreditStockField *pPrivateCreditStock) {};
 
-	///Ëø¶¨
+	///é”å®š
 	virtual void OnRtnLock(CUTLockField *pLock) {};
 
-	///Ëø¶¨´íÎó»Ø±¨
+	///é”å®šé”™è¯¯å›æŠ¥
 	virtual void OnRspLockInsert(CUTInputLockField *pInputLock, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ĞĞÈ¨
+	///è¡Œæƒ
 	virtual void OnRtnExecOrder(CUTExecOrderField *pExecOrder) {};
 
-	///ĞĞÈ¨´íÎó»Ø±¨
+	///è¡Œæƒé”™è¯¯å›æŠ¥
 	virtual void OnRspExecOrderInsert(CUTInputExecOrderField *pInputExecOrder, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ĞĞÈ¨²Ù×÷»Ø±¨
+	///è¡Œæƒæ“ä½œå›æŠ¥
 	virtual void OnRspExecOrderAction(CUTInputExecOrderActionField *pInputExecOrderAction, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ĞĞÈ¨²Ù×÷»Ø±¨
+	///è¡Œæƒæ“ä½œå›æŠ¥
 	virtual void OnErrRtnExecOrderAction(CUTExecOrderActionField *pExecOrderAction) {};
 	
 
-	///ÇëÇó²éÑ¯ºÏÔ¼ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢åˆçº¦å“åº”
 	virtual void OnRspQryInstrument(CUTInstrumentField *pInstrument, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ĞĞÇéÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢è¡Œæƒ…å“åº”
 	virtual void OnRspQryDepthMarketData(CUTDepthMarketDataField *pDepthMarketData, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯³Ö²ÖÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŒä»“å“åº”
 	virtual void OnRspQryInvestorPosition(CUTInvestorPositionField *pInvestorPosition, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯×Ê½ğÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢èµ„é‡‘å“åº”
 	virtual void OnRspQryTradingAccount(CUTTradingAccountField *pTradingAccount, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨ºÏÔ¼Ã¿ÊÖ±£Ö¤½ğÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒåˆçº¦æ¯æ‰‹ä¿è¯é‡‘å“åº”
 	virtual void OnRspQryOptionInstrMarginByVolume(CUTOptionInstrMarginByVolumeField *pOptionInstrMarginByVolume, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨ÊÖĞø·ÑÂÊÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒæ‰‹ç»­è´¹ç‡å“åº”
 	virtual void OnRspQryOptionInstrCommRate(CUTOptionInstrCommRateField *pOptionInstrCommRate, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯±¨µ¥ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ¥å•å“åº”
 	virtual void OnRspQryOrder(CUTOrderField *pOrder, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯³É½»ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æˆäº¤å“åº”
 	virtual void OnRspQryTrade(CUTTradeField *pTrade, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ÊÖĞø·ÑÂÊÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æ‰‹ç»­è´¹ç‡å“åº”
 	virtual void OnRspQryInstrumentCommissionRate(CUTInstrumentCommissionRateField *pInstrumentCommissionRate, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…å“åº”
 	virtual void OnRspQryInvestor(CUTInvestorField *pInvestor, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯×ªÕËÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢è½¬è´¦å“åº”
 	virtual void OnRspQryTransfer(CUTTransferField *pTransfer, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯½»Ò×±àÂë
+	///è¯·æ±‚æŸ¥è¯¢äº¤æ˜“ç¼–ç 
 	virtual void OnRspQryTradingCode(CUTTradingCodeField *pTradingCode, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///²éÑ¯×î´óÏÂµ¥Á¿ÏìÓ¦
+	///æŸ¥è¯¢æœ€å¤§ä¸‹å•é‡å“åº”
 	virtual void OnRspQryMaxOrderVolume(CUTMaxOrderVolumeField *pMaxOrderVolume, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ĞÅÓÃºÏÔ¼ÊôĞÔÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢ä¿¡ç”¨åˆçº¦å±æ€§å“åº”
 	virtual void OnRspQryCreditInstrument(CUTCreditInstrumentField *pCreditInstrument, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßĞÅÓÃĞÅÏ¢ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…ä¿¡ç”¨ä¿¡æ¯å“åº”
 	virtual void OnRspQryCreditInvestor(CUTCreditInvestorField *pCreditInvestor, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕß¿ÉÈÚÈ¯ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…å¯èåˆ¸å“åº”
 	virtual void OnRspQryPrivateCreditStock(CUTPrivateCreditStockField *pPrivateCreditStock, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯¼¯ÖĞ¶È²ÎÊıÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢é›†ä¸­åº¦å‚æ•°å“åº”
 	virtual void OnRspQryCreditConcentration(CUTCreditConcentrationField *pCreditConcentration, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÈÚ×ÊÃ÷Ï¸ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…èèµ„æ˜ç»†å“åº”
 	virtual void OnRspQryCreditFundDetail(CUTCreditFundDetailField *pCreditFundDetail, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÈÚÈ¯Ã÷Ï¸ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…èåˆ¸æ˜ç»†å“åº”
 	virtual void OnRspQryCreditStockDetail(CUTCreditStockDetailField *pCreditStockDetail, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÖ±½Ó»¹¿îÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…ç›´æ¥è¿˜æ¬¾å“åº”
 	virtual void OnRspQryFundPayback(CUTFundPaybackField *pFundPayback, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Í¶×ÊÕßÖ±½Ó»¹È¯ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æŠ•èµ„è€…ç›´æ¥è¿˜åˆ¸å“åº”
 	virtual void OnRspQryStockPayback(CUTStockPaybackField *pStockPayback, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯¹«ÓĞÈÚ×Ê¶î¶ÈÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢å…¬æœ‰èèµ„é¢åº¦å“åº”
 	virtual void OnRspQryPublicCreditFund(CUTPublicCreditFundField *pPublicCreditFund, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ETFĞÅÏ¢ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢ETFä¿¡æ¯å“åº”
 	virtual void OnRspQryETFInfo(CUTETFInfoField *pETFInfo, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ETF³É·Ö¹ÉÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢ETFæˆåˆ†è‚¡å“åº”
 	virtual void OnRspQryETFComponent(CUTETFComponentField *pETFComponent, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯±£Ö¤½ğ¿ÉÓÃÓà¶îÃ÷Ï¸ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢ä¿è¯é‡‘å¯ç”¨ä½™é¢æ˜ç»†å“åº”
 	virtual void OnRspQryCreditAvailableDetail(CUTCreditAvailableDetailField *pCreditAvailableDetail, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Ëø¶¨ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢é”å®šå“åº”
 	virtual void OnRspQryLock(CUTLockField *pLock, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ĞĞÈ¨ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢è¡Œæƒå“åº”
 	virtual void OnRspQryExecOrder(CUTExecOrderField *pExecOrder, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯Ëø¶¨²ÖÎ»ÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢é”å®šä»“ä½å“åº”
 	virtual void OnRspQryLockPosition(CUTLockPositionField *pLockPosition, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨ÏŞ²ÖÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒé™ä»“å“åº”
 	virtual void OnRspQryOptPosiLimit(CUTOptPosiLimitField *pOptPosiLimit, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 	
 
-	///ÇëÇó²éÑ¯ÆÚÈ¨ÏŞ¶îÏìÓ¦
+	///è¯·æ±‚æŸ¥è¯¢æœŸæƒé™é¢å“åº”
 	virtual void OnRspQryOptAmountLimit(CUTOptAmountLimitField *pOptAmountLimit, CUTRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
 
 private:
@@ -605,7 +605,7 @@ private:
 	TThostFtdcSessionIDType m_SessionID;
 	CThostFtdcRspUserLoginField  ThostRspUserLogin;
 
-	// Ä£ÄâÏìÓ¦
+	// æ¨¡æ‹Ÿå“åº”
 	CThostFtdcRspInfoField  ThostRspInfo;
 	CThostFtdcRspInfoField  ThostRspInfoNotSupported;
 	CThostFtdcRspAuthenticateField RspAuthenticateField;

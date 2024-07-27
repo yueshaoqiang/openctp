@@ -11,7 +11,7 @@
 
 CThostFtdcMdApi* CThostFtdcMdApi::CreateFtdcMdApi(const char* pszFlowPath, const bool bIsUsingUdp, const bool bIsMulticast)
 {
-	return new CFtdcMdApiImpl();
+	return new CFtdcMdApiImpl(pszFlowPath);
 }
 
 const char *CThostFtdcMdApi::GetApiVersion()
@@ -31,11 +31,10 @@ const char *CThostFtdcMdApi::GetApiVersion()
 #endif
 }
 
-CFtdcMdApiImpl::CFtdcMdApiImpl()
+CFtdcMdApiImpl::CFtdcMdApiImpl(const char *pszFlowPath, int nCPUID)
 {
 	memset(&TradingDay, 0, sizeof(TradingDay));
-	m_pSpi = NULL;
-	m_pUserApi = CTORATstpXMdApi::CreateTstpXMdApi();
+	m_pUserApi = CUTApi::CreateApi(pszFlowPath, nCPUID);
 	m_pUserApi->RegisterSpi(this);
 }
 
